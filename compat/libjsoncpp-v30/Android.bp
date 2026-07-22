@@ -1,0 +1,42 @@
+// Adapted from Giovanni Ricca's libjsoncpp-v30 compatibility module.
+// Gerrit 494405, commit d5af95cca2b26b52a627ad806d6c45d2db5be71e.
+// SPDX-License-Identifier: Apache-2.0
+
+package {
+    default_applicable_licenses: ["huawei_compat_jsoncpp_v30_license"],
+}
+
+license {
+    name: "huawei_compat_jsoncpp_v30_license",
+    visibility: [":__subpackages__"],
+    license_kinds: [
+        "SPDX-license-identifier-MIT",
+        "legacy_unencumbered",
+    ],
+    license_text: ["LICENSE"],
+}
+
+cc_prebuilt_library_shared {
+    name: "libjsoncpp-v30",
+    vendor: true,
+    compile_multilib: "both",
+    target: {
+        android_arm: {
+            srcs: ["arm/libjsoncpp-v30.so"],
+        },
+        android_arm64: {
+            srcs: ["arm64/libjsoncpp-v30.so"],
+        },
+    },
+    strip: {
+        none: true,
+    },
+    stl: "none",
+    shared_libs: ["libc++"],
+    system_shared_libs: [
+        "libc",
+        "libm",
+        "libdl",
+    ],
+    check_elf_files: true,
+}
