@@ -1,0 +1,324 @@
+{
+  "source_guards": {
+    "system/libhidl/Android.bp": "6e997721960773fce46b2fb0d15adea77ab7e99a1f82aeed43635ae4db8fa889",
+    "system/libhwbinder/Android.bp": "3f67184794506d28d40021bff94f2eafd0879dbc51374a779330f369622666ef",
+    "system/core/libsync/libsync.map.txt": "977e84fa5f63dc8038284a99966d77e6934694c17e2a6c87fc225dd36015d6d8",
+    "prebuilts/extract-tools/linux-x86/bin/patchelf-0_9": "8c71725a3c6db7e51b6fa757e9e6601af479de132747fe41b8fab04bcda47efc"
+  },
+  "removed_needed": [
+    "libhidltransport.so",
+    "libhwbinder.so"
+  ],
+  "abis": {
+    "arm": {
+      "input_sha256": "187e178eb7d0205ba4f55fdec3959e98b60cb6d09c70dd137f7b5c4669819359",
+      "maintainer_sha256": "b79b15259e497a7e7580b1a5c58c291f0a347ca85f75edb0263e5e6da38056b2",
+      "output_sha256": "583e7a0c6356211ca02376dd869761c66056c7510dd3b5d78161567023403f4f",
+      "bytes": 163580,
+      "needed": [
+        "android.hardware.graphics.allocator@2.0.so",
+        "android.hardware.graphics.allocator@3.0.so",
+        "android.hardware.graphics.common@1.2.so",
+        "android.hardware.graphics.mapper@2.0.so",
+        "android.hardware.graphics.mapper@2.1.so",
+        "android.hardware.graphics.mapper@3.0.so",
+        "libbase.so",
+        "libcutils.so",
+        "libhardware.so",
+        "libhidlbase.so",
+        "libsync.so",
+        "libutils.so",
+        "liblog.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ],
+      "imports": 100,
+      "exports": 453,
+      "unchanged_allocated_sections": {
+        ".note.android.ident": {
+          "address": 340,
+          "bytes": 24,
+          "type": 7,
+          "sha256": "7799c4f2a4a1887a69600fbebe1857807e31636c87265285d605bda762ce5509"
+        },
+        ".note.gnu.build-id": {
+          "address": 364,
+          "bytes": 32,
+          "type": 7,
+          "sha256": "011e34a45b198afe698178f9292df2a06f287ef2c67425be39ab738ffc0b19df"
+        },
+        ".ARM.exidx": {
+          "address": 396,
+          "bytes": 2592,
+          "type": 1879048193,
+          "sha256": "2f2118ec68cf71f54f7be3d5038fb08ec158265387d075584012b8f4cfb8c27a"
+        },
+        ".dynsym": {
+          "address": 2988,
+          "bytes": 8928,
+          "type": 11,
+          "sha256": "2971e3f5ef6de2a4bf4662a57386cc8dead082fdb5ce965309286ae7fa24f5d6"
+        },
+        ".gnu.version": {
+          "address": 11916,
+          "bytes": 1116,
+          "type": 1879048191,
+          "sha256": "42a25d4d3f01d7ce6454546cff8f326cca195b0adb3486c1127046530ce88e2a"
+        },
+        ".gnu.version_r": {
+          "address": 13032,
+          "bytes": 160,
+          "type": 1879048190,
+          "sha256": "9da2805ad4233718e1ebd1b9eb2b8cd9c762b06ef8670566f2c33153f568e2b1"
+        },
+        ".gnu.hash": {
+          "address": 13192,
+          "bytes": 3304,
+          "type": 1879048182,
+          "sha256": "ca27733cb58b499808da2fa8cb40cf24c97a0fd6371494c71d20e4a776f24c2c"
+        },
+        ".rel.dyn": {
+          "address": 48668,
+          "bytes": 594,
+          "type": 1610612737,
+          "sha256": "e4fe273eb5fe6395e2e486b5791ae779f8845aa49a00a7289de6a60669ead544"
+        },
+        ".relr.dyn": {
+          "address": 49264,
+          "bytes": 44,
+          "type": 1879047936,
+          "sha256": "618d5204a3af86d7c510542a32fb8d293ddf519ee87efa3bc896b793df8a8075"
+        },
+        ".rel.plt": {
+          "address": 49308,
+          "bytes": 1464,
+          "type": 9,
+          "sha256": "b46e1c2c90f2eeeb5f2579fad9cbcfb07ab13eea5b8b4b1bdadfa080af8febaf"
+        },
+        ".ARM.extab": {
+          "address": 50772,
+          "bytes": 156,
+          "type": 1,
+          "sha256": "09c9fb42ae3d7f4ffa26f87f7d575570117f874caaae420045501f5e69169dd8"
+        },
+        ".rodata": {
+          "address": 50928,
+          "bytes": 4356,
+          "type": 1,
+          "sha256": "3a5fd813eb010d9c205f38864702a3410ec3181c173a654c007d6ab18328890c"
+        },
+        ".text": {
+          "address": 57344,
+          "bytes": 54276,
+          "type": 1,
+          "sha256": "a9f438bbb93ffb6bd8298b17dd0fa61c9f38a3591b023a58b5899b72c850f3dd"
+        },
+        ".plt": {
+          "address": 111632,
+          "bytes": 2960,
+          "type": 1,
+          "sha256": "418b986432a00935ff40502622d29225a7acd6f5d5946616c4b553740509373b"
+        },
+        ".data": {
+          "address": 114688,
+          "bytes": 4,
+          "type": 1,
+          "sha256": "28b6c3569cd05bc84fe0f601b0e70809e86b370ac28c8638f8a1299580e60304"
+        },
+        ".fini_array": {
+          "address": 118784,
+          "bytes": 8,
+          "type": 15,
+          "sha256": "b100314c22ce0584df2b3a79d3fe780769f997d0516f5d767ae6afaafd353a67"
+        },
+        ".data.rel.ro": {
+          "address": 118792,
+          "bytes": 1056,
+          "type": 1,
+          "sha256": "ba274248ee58c11ae67f45eb08e9988a615c15a29bf8af6e6344e6d4ea27181a"
+        },
+        ".init_array": {
+          "address": 119848,
+          "bytes": 20,
+          "type": 14,
+          "sha256": "23dacf02b371cb6b7fdd67ab87b65b0078ba8fda45fb67fecb8abdf4efe17192"
+        },
+        ".got": {
+          "address": 120228,
+          "bytes": 156,
+          "type": 1,
+          "sha256": "59bf9091f4cbbd2a8796bfe086a501c57226c42739dcf8ad323e7493ad51e38f"
+        },
+        ".got.plt": {
+          "address": 120384,
+          "bytes": 744,
+          "type": 1,
+          "sha256": "717b8e769958d521ea11dc3bec84986dd7a089f72770203e381c260104ff6c14"
+        },
+        ".bss": {
+          "address": 122880,
+          "bytes": 76,
+          "type": 8,
+          "sha256": null
+        }
+      }
+    },
+    "arm64": {
+      "input_sha256": "f7850b44ee32a46123441daa4cc6f1d553c4a1510bdb3c23f19fb1a16414f58f",
+      "maintainer_sha256": "48d451ae950e311f729d9ccb503aed41dd4ef695238c4acc803705174eb78416",
+      "output_sha256": "24c42770590a84f906cadbcae7d46b106d54b6544c525cd2db204bd3aee79835",
+      "bytes": 208392,
+      "needed": [
+        "android.hardware.graphics.allocator@2.0.so",
+        "android.hardware.graphics.allocator@3.0.so",
+        "android.hardware.graphics.common@1.2.so",
+        "android.hardware.graphics.mapper@2.0.so",
+        "android.hardware.graphics.mapper@2.1.so",
+        "android.hardware.graphics.mapper@3.0.so",
+        "libbase.so",
+        "libcutils.so",
+        "libhardware.so",
+        "libhidlbase.so",
+        "libsync.so",
+        "libutils.so",
+        "liblog.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ],
+      "imports": 99,
+      "exports": 440,
+      "unchanged_allocated_sections": {
+        ".note.android.ident": {
+          "address": 568,
+          "bytes": 24,
+          "type": 7,
+          "sha256": "7799c4f2a4a1887a69600fbebe1857807e31636c87265285d605bda762ce5509"
+        },
+        ".note.gnu.build-id": {
+          "address": 592,
+          "bytes": 32,
+          "type": 7,
+          "sha256": "dca12c21ffd68b7336acc2440d0248193404218dec8322670ac906df51fd3f1c"
+        },
+        ".dynsym": {
+          "address": 624,
+          "bytes": 13056,
+          "type": 11,
+          "sha256": "4f2f89f2758e426a37f8fcb96be89a42d77d8a6d1ed2f8009fe1d788c8d54256"
+        },
+        ".gnu.version": {
+          "address": 13680,
+          "bytes": 1088,
+          "type": 1879048191,
+          "sha256": "b9bb05bc0b9c4a16c596f0c1006cfdc1298c4794776cc956ca531889910d680e"
+        },
+        ".gnu.version_r": {
+          "address": 14768,
+          "bytes": 160,
+          "type": 1879048190,
+          "sha256": "822b9f5fde5a69ffd8a7f8eead955692a04263795e3f0f00a37267af18d67279"
+        },
+        ".gnu.hash": {
+          "address": 14928,
+          "bytes": 3240,
+          "type": 1879048182,
+          "sha256": "9ebf2de1064d7f9214ce5ec7707a322684f34fc0b3f29004cbcfae40a2808b50"
+        },
+        ".rela.dyn": {
+          "address": 49856,
+          "bytes": 1182,
+          "type": 1610612738,
+          "sha256": "fe8cb87f1dc2679537efcbc647574fb31ab94d030faa11c3727cc73c2a5ef668"
+        },
+        ".relr.dyn": {
+          "address": 51040,
+          "bytes": 56,
+          "type": 1879047936,
+          "sha256": "e2c38210ed8d48d8dd553df59403f5f5da8aeb71f60702bc58e33f7ee7d1ff80"
+        },
+        ".rela.plt": {
+          "address": 51096,
+          "bytes": 4248,
+          "type": 4,
+          "sha256": "bbc2e37422973521e8e4a471290d783b475771fee405d1d78cd8d05806d8d5a7"
+        },
+        ".rodata": {
+          "address": 55344,
+          "bytes": 4812,
+          "type": 1,
+          "sha256": "6a4a1610e6540268acfec21a185104d8b93a3c76279cf10ed79fd12c0dd3cab2"
+        },
+        ".eh_frame_hdr": {
+          "address": 60156,
+          "bytes": 3612,
+          "type": 1,
+          "sha256": "fb5f769bc5e000d563bbc973bb62da4f9c0088761efbd43533bd7b7578435ace"
+        },
+        ".eh_frame": {
+          "address": 63768,
+          "bytes": 14420,
+          "type": 1,
+          "sha256": "571dd96af8bd1f8c7ccd7dd3b7b6a74d5498bee7508c23095da02c6b00edc890"
+        },
+        ".text": {
+          "address": 81920,
+          "bytes": 72968,
+          "type": 1,
+          "sha256": "9f1b7f44d32b945cb708bbef047fec1c2077b4f28c731e4b51faeb3b509443fa"
+        },
+        ".plt": {
+          "address": 154896,
+          "bytes": 2864,
+          "type": 1,
+          "sha256": "ef5ea0ba3fb5d10cad16e5c1f060b85a040524b117c973d31f5a99ee24206451"
+        },
+        ".data": {
+          "address": 159744,
+          "bytes": 8,
+          "type": 1,
+          "sha256": "bfe68023e176847238040971007e4c3ef1dd9a102bffbea58b9819d0eb49a55c"
+        },
+        ".fini_array": {
+          "address": 163840,
+          "bytes": 16,
+          "type": 15,
+          "sha256": "6f182eb2185557b131da209f2716d22d92421bf7e9853ee98163aef7d14e03bc"
+        },
+        ".data.rel.ro": {
+          "address": 163856,
+          "bytes": 2112,
+          "type": 1,
+          "sha256": "889ba986dd303b4d971edd2bd1db9ca5f30e506d59e30571fd4ee254ff46c9fd"
+        },
+        ".init_array": {
+          "address": 165968,
+          "bytes": 40,
+          "type": 14,
+          "sha256": "76ca2abc9789c45d7293b645bba52902819f5917dcc679f6c63732ef97c240a0"
+        },
+        ".got": {
+          "address": 166728,
+          "bytes": 304,
+          "type": 1,
+          "sha256": "e2fc162ed9124452d23c85e81d60a0c228f414c3214a5de635737e25fbd29ac1"
+        },
+        ".got.plt": {
+          "address": 167032,
+          "bytes": 1440,
+          "type": 1,
+          "sha256": "3917b1549cdb43333d389a4431512d9ee3657c435482d94befac96dcab9aa221"
+        },
+        ".bss": {
+          "address": 172032,
+          "bytes": 248,
+          "type": 8,
+          "sha256": null
+        }
+      }
+    }
+  }
+}

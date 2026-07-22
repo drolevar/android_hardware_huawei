@@ -26,8 +26,9 @@ def digest(path):
 
 
 def main():
-    if len(sys.argv) != 2:
-        raise SystemExit("Usage: python3 -B verify_libui_v29.py WORKSPACE_ROOT")
+    if len(sys.argv) not in (2, 3) or (len(sys.argv) == 3 and sys.argv[2] != "--adapted"):
+        raise SystemExit("Usage: python3 -B verify_libui_v29.py WORKSPACE_ROOT [--adapted]")
+    adapted = len(sys.argv) == 3
     workspace = Path(sys.argv[1]).resolve()
     here = Path(__file__).resolve().parent
     recorded = json.loads((here / "libui-v29-20261114.json").read_text())
@@ -81,6 +82,10 @@ def main():
             after = checker.ELFParser.open(str(candidate), str(llvm))
             require(before.imported == after.imported and before.exported == after.exported,
                     abi + " changed symbol contract during experiment")
+            if adapted:
+                shipped = here.parent / "libui-v29" / abi / candidate.name
+                require(shipped.read_bytes() == candidate.read_bytes(), abi + " adapted bytes differ")
+                candidate = shipped
             command = [sys.executable, "-B", checker_path, "--llvm-readobj", llvm,
                        "--soname", candidate.name, "--max-page-size", "4096"]
             for reference in row["dependency_references"]:
@@ -104,7 +109,7 @@ def main():
             require(result.returncode == row["experimental_strict_check"]["exit_status"]
                     and errors == row["experimental_strict_check"]["errors"],
                     abi + " reference outcome changed: " + result.stderr)
-        print(f"{abi}: public bytes reproduced, {len(symbols)}/17 UI imports covered; "
+        print(f"{abi}: {'adapted' if adapted else 'public'} bytes reproduced, {len(symbols)}/17 UI imports covered; "
               "four expected LIBSYNC reference failures reproduced")
     print("Audit replay complete. No target graph, target ABI, or runtime success is claimed.")
 

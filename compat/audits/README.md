@@ -1,5 +1,9 @@
 # Bounded compatibility audits
 
+The separate [guarded libui-v29 adaptation](../libui-v29/README.md) now enables
+an actual target-validation attempt. The dated evidence below preserves the
+earlier audit decision and reference failures; it is not a target success claim.
+
 The [libui-v29 audit](libui-v29-20261114.md) and its
 [structured evidence](libui-v29-20261114.json) are **audit only**. No build module,
 prebuilt library, shim, bypass, or proprietary BLA bytes are included.
@@ -26,7 +30,6 @@ in place, checks recorded identities, reconstructs only public candidates in a
 temporary directory, and reproduces the expected strict-check failures. It does
 not write a module, alter the evidence, build the source tree, or access a device.
 
-Next concrete options are to stop the graph at this documented dependency, or
-separately validate dependency normalization against actual LOS24 target/LLNDK
-providers before proposing a module. Renaming VNDK32/34 libraries or disabling
-checks is not supported by this audit.
+The adaptation can be checked against these references with an additional
+`--adapted` argument. Actual LOS24 target/LLNDK provider checks remain for the
+build. Renaming VNDK32/34 libraries or disabling checks is not supported.

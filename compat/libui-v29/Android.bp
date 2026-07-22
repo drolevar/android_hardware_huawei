@@ -1,0 +1,54 @@
+// Adapted from Giovanni Ricca's Gerrit 494395 compatibility module.
+// Public VNDK29 code; see README.md for the guarded dependency adaptation.
+// SPDX-License-Identifier: Apache-2.0
+
+package {
+    default_applicable_licenses: ["huawei_compat_ui_v29_license"],
+}
+
+license {
+    name: "huawei_compat_ui_v29_license",
+    visibility: [":__subpackages__"],
+    license_kinds: ["SPDX-license-identifier-Apache-2.0"],
+    license_text: ["NOTICE"],
+}
+
+cc_prebuilt_library_shared {
+    name: "libui-v29",
+    vendor: true,
+    compile_multilib: "both",
+    target: {
+        android_arm: {
+            srcs: ["arm/libui-v29.so"],
+        },
+        android_arm64: {
+            srcs: ["arm64/libui-v29.so"],
+        },
+    },
+    strip: {
+        none: true,
+    },
+    stl: "none",
+    shared_libs: [
+        "android.hardware.graphics.allocator@2.0",
+        "android.hardware.graphics.allocator@3.0",
+        "android.hardware.graphics.common@1.2",
+        "android.hardware.graphics.mapper@2.0",
+        "android.hardware.graphics.mapper@2.1",
+        "android.hardware.graphics.mapper@3.0",
+        "libbase",
+        "libcutils",
+        "libhardware",
+        "libhidlbase",
+        "libsync",
+        "libutils",
+        "liblog",
+        "libc++",
+    ],
+    system_shared_libs: [
+        "libc",
+        "libm",
+        "libdl",
+    ],
+    check_elf_files: true,
+}
