@@ -1,0 +1,1187 @@
+{
+  "date": "2026-11-14",
+  "decision": "audit-only; no supported drop-in module established within the timebox",
+  "patch": {
+    "author": "Giovanni Ricca <giovanniricca@proton.me>",
+    "commit": "427c07be9e861910d05a9453f4a760dad128f136",
+    "gerrit": 494395,
+    "sha256": "01640e8f5235e709b7c307704d924f3c9952b887c29cbea55c9f53b04736a983"
+  },
+  "aosp_vndk29": {
+    "revision": "2e659f04a7cde964415c82dd7507610769165408",
+    "binary_update_commit": "e04a093e13131184cfece3fe70a0624ec4178464",
+    "build": "7002685",
+    "branch": "qt-gsi-release",
+    "notice_sha256": "38751245389e1e23f73e6f5384b5cbe7fa972cc4410c5adc9c04b082a0b9561a"
+  },
+  "source_revisions": {
+    "hardware/lineage/compat": "4865929e480ba8a3e5ec889374d82bd760b3c893",
+    "system/libhwbinder": "2f5282448223b97c541181a5b94a05c2ac17ff17",
+    "system/libhidl": "061055fc4dad78e5d25a77d9217001794656f16b",
+    "system/core": "65d661b1a536701e8b118be4e9728d7b5ca727c9",
+    "system/logging": "336e1707c8258adf1f1c5c5511218b533f3a22e8",
+    "prebuilts/vndk/v34": "c6a2527f4e03a89896f9d44331bc6fe91f679aab",
+    "prebuilts/extract-tools": "aaeb969a477321411279c03799f45ae9f94f770b"
+  },
+  "abis": {
+    "arm": {
+      "files": {
+        "candidate": {
+          "sha256": "b79b15259e497a7e7580b1a5c58c291f0a347ca85f75edb0263e5e6da38056b2",
+          "bytes": 163580,
+          "soname": "libui-v29.so",
+          "machine": 40,
+          "class": 1
+        },
+        "aosp_snapshot": {
+          "sha256": "187e178eb7d0205ba4f55fdec3959e98b60cb6d09c70dd137f7b5c4669819359",
+          "bytes": 129736,
+          "soname": "libui.so",
+          "machine": 40,
+          "class": 1
+        },
+        "original_hwc": {
+          "sha256": "c878835dc6a814e23ee43da9438559b1ba0ac4f9bbe9c77524e1d7dc0e923874",
+          "bytes": 732196,
+          "soname": "hwcomposer.kirin970.so",
+          "machine": 40,
+          "class": 1
+        },
+        "generated_hwc": {
+          "sha256": "a6035bb107a5afd5f6e1583e1d586d06e88de476f23f63a78a3382b2a9d5684d",
+          "bytes": 834321,
+          "soname": "hwcomposer.kirin970.so",
+          "machine": 40,
+          "class": 1
+        },
+        "stock_ui": {
+          "sha256": "d7f52838210d2ff9aedc976c82b4e0a374a8318eb3a8efe2a672d6dee2bf9f55",
+          "bytes": 151400,
+          "soname": "libui.so",
+          "machine": 40,
+          "class": 1
+        }
+      },
+      "candidate_needed": [
+        "android.hardware.graphics.allocator@2.0.so",
+        "android.hardware.graphics.allocator@3.0.so",
+        "android.hardware.graphics.common@1.2.so",
+        "android.hardware.graphics.mapper@2.0.so",
+        "android.hardware.graphics.mapper@2.1.so",
+        "android.hardware.graphics.mapper@3.0.so",
+        "libbase.so",
+        "libcutils.so",
+        "libhardware.so",
+        "libhidlbase.so",
+        "libhidltransport.so",
+        "libhwbinder.so",
+        "libsync.so",
+        "libutils.so",
+        "liblog.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ],
+      "candidate_import_count": 100,
+      "candidate_export_count": 453,
+      "load_alignments": [
+        4096,
+        4096,
+        4096,
+        4096
+      ],
+      "import_versions": [
+        "",
+        "LIBC",
+        "LIBLOG",
+        "LIBLOG_M",
+        "LIBSYNC"
+      ],
+      "hwc_imports_unchanged": true,
+      "hwc_needed_rename_only": true,
+      "stock_ui_matched_hwc_imports": {
+        "_ZN7android6Region12subtractSelfERKS0_": [
+          ""
+        ],
+        "_ZN7android6Region13translateSelfEii": [
+          ""
+        ],
+        "_ZN7android6Region16addRectUncheckedEiiii": [
+          ""
+        ],
+        "_ZN7android6Region3setERKNS_4RectE": [
+          ""
+        ],
+        "_ZN7android6Region5clearEv": [
+          ""
+        ],
+        "_ZN7android6Region6orSelfERKNS_4RectE": [
+          ""
+        ],
+        "_ZN7android6Region6orSelfERKS0_": [
+          ""
+        ],
+        "_ZN7android6Region7andSelfERKNS_4RectE": [
+          ""
+        ],
+        "_ZN7android6RegionC1ERKNS_4RectE": [
+          ""
+        ],
+        "_ZN7android6RegionC1Ev": [
+          ""
+        ],
+        "_ZN7android6RegionD1Ev": [
+          ""
+        ],
+        "_ZN7android6RegionaSERKS0_": [
+          ""
+        ],
+        "_ZNK7android6Region3endEv": [
+          ""
+        ],
+        "_ZNK7android6Region5beginEv": [
+          ""
+        ],
+        "_ZNK7android6Region9intersectERKS0_": [
+          ""
+        ],
+        "_ZNK7android4Rect9intersectERKS0_PS0_": [
+          ""
+        ],
+        "_ZNK7android6Region9intersectERKNS_4RectE": [
+          ""
+        ]
+      },
+      "missing_ui_symbols": [],
+      "dependency_references": [
+        {
+          "name": "android.hardware.graphics.allocator@2.0.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "2560a48ed96c5bbf0f017dc5fe34c2883c43accaed81197b5aea6bb2afac4448",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics9allocator4V2_010IAllocator10getServiceERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "android.hardware.graphics.allocator@3.0.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "275b96a7182344a1f3d735d6151e3ac32e368e39096f4e8814f2dc059fff57e7",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics9allocator4V3_010IAllocator10getServiceERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "android.hardware.graphics.common@1.2.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "fab09370acac8eaa7908ac1ee3bbf5214c8f2baaf45a41684fa792aea0055237",
+          "matching_imports": {}
+        },
+        {
+          "name": "android.hardware.graphics.mapper@2.0.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "d5d3c39706436aae66f2e7d23d17af257968c01a3d1f0f0c10e161585f0ec3a1",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics6mapper4V2_07IMapper10descriptorE": [
+              ""
+            ],
+            "_ZN7android8hardware8graphics6mapper4V2_07IMapper10getServiceERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "android.hardware.graphics.mapper@2.1.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "2863049deb4f52c4efe87fdb3adeb5c91c972b24fb9b3907954f6999026c4e30",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics6mapper4V2_17IMapper8castFromERKNS_2spINS2_4V2_07IMapperEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "android.hardware.graphics.mapper@3.0.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "ddf4a20069e52f320ff75b4c9189eedbeeb2c3ba1e3d7c4ae320ce9c68b1f816",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics6mapper4V3_07IMapper10descriptorE": [
+              ""
+            ],
+            "_ZN7android8hardware8graphics6mapper4V3_07IMapper10getServiceERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libbase.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "814b90c31ad17665d5811118110485b33ac1cb15482bc08ce0cf245f79575b82",
+          "matching_imports": {
+            "_ZN7android4base12StringPrintfEPKcz": [
+              ""
+            ],
+            "_ZN7android4base13StringAppendFEPNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEPKcz": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libcutils.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "1e0de25f0e4711f90a4723155ceede29eec57fd581c20b6d378c400e95f66208",
+          "matching_imports": {
+            "atrace_begin_body": [
+              ""
+            ],
+            "atrace_enabled_tags": [
+              ""
+            ],
+            "atrace_end_body": [
+              ""
+            ],
+            "atrace_is_ready": [
+              ""
+            ],
+            "atrace_setup": [
+              ""
+            ],
+            "native_handle_init": [
+              ""
+            ],
+            "native_handle_close": [
+              ""
+            ],
+            "native_handle_create": [
+              ""
+            ],
+            "native_handle_delete": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libhardware.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "f2d7d744ffe358027489bd2b3816c9eaa416015a0fdfd3f6f5e51eb9ba69192c",
+          "matching_imports": {}
+        },
+        {
+          "name": "libhidlbase.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "c17e6cce1dceb5c7215b3a28e7e1f966606802d2a13c37367865ced1d3f1ede4",
+          "matching_imports": {
+            "_ZN7android8hardware11hidl_handleC1Ev": [
+              ""
+            ],
+            "_ZN7android8hardware11hidl_handleD1Ev": [
+              ""
+            ],
+            "_ZN7android8hardware11hidl_handleaSEPK13native_handle": [
+              ""
+            ],
+            "_ZN7android8hardware14IPCThreadState13flushCommandsEv": [
+              ""
+            ],
+            "_ZN7android8hardware14IPCThreadState4selfEv": [
+              ""
+            ],
+            "_ZN7android8hardware7details13return_statusD2Ev": [
+              ""
+            ],
+            "_ZN7android8hardware7details13return_statusaSEOS2_": [
+              ""
+            ],
+            "_ZN7android8hardware7details25preloadPassthroughServiceERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE": [
+              ""
+            ],
+            "_ZNK7android8hardware11hidl_handle15getNativeHandleEv": [
+              ""
+            ],
+            "_ZNK7android8hardware11hidl_string5c_strEv": [
+              ""
+            ],
+            "_ZNK7android8hardware7details13return_status8assertOkEv": [
+              ""
+            ],
+            "_ZN7android8hardware11hidl_handleC1EPK13native_handle": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libsync.so",
+          "kind": "stock system reference",
+          "sha256": "24738bb474387d803cac26b91939fe3eafced3798893062553daa61155aab05b",
+          "matching_imports": {
+            "sync_file_info": [
+              "LIBSYNC"
+            ],
+            "sync_file_info_free": [
+              "LIBSYNC"
+            ],
+            "sync_merge": [
+              "LIBSYNC"
+            ],
+            "sync_wait": [
+              "LIBSYNC"
+            ]
+          }
+        },
+        {
+          "name": "libutils.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "436e1e6380dfbaa536f5e36ba3f0ca19202cc17360bd23995f9228172cdd02c5",
+          "matching_imports": {
+            "_ZN7android14sp_report_raceEv": [
+              ""
+            ],
+            "_ZN7android10VectorImpl13editArrayImplEv": [
+              ""
+            ],
+            "_ZN7android10VectorImpl6resizeEj": [
+              ""
+            ],
+            "_ZNK7android7RefBase9decStrongEPKv": [
+              ""
+            ],
+            "_ZNK7android7RefBase9incStrongEPKv": [
+              ""
+            ],
+            "_ZN7android7RefBase10onFirstRefEv": [
+              ""
+            ],
+            "_ZN7android7RefBase13onLastWeakRefEPKv": [
+              ""
+            ],
+            "_ZN7android7RefBase15onLastStrongRefEPKv": [
+              ""
+            ],
+            "_ZN7android7RefBase20onIncStrongAttemptedEjPKv": [
+              ""
+            ],
+            "_ZN7android7RefBaseC2Ev": [
+              ""
+            ],
+            "_ZN7android7RefBaseD2Ev": [
+              ""
+            ],
+            "_ZN7android10VectorImpl13finish_vectorEv": [
+              ""
+            ],
+            "_ZN7android16SortedVectorImpl3addEPKv": [
+              ""
+            ],
+            "_ZN7android16SortedVectorImpl6removeEPKv": [
+              ""
+            ],
+            "_ZN7android16SortedVectorImplC2Ejj": [
+              ""
+            ],
+            "_ZN7android16SortedVectorImplD2Ev": [
+              ""
+            ],
+            "_ZN7android10VectorImpl12appendVectorERKS0_": [
+              ""
+            ],
+            "_ZN7android10VectorImpl3addEPKv": [
+              ""
+            ],
+            "_ZN7android10VectorImpl5clearEv": [
+              ""
+            ],
+            "_ZN7android10VectorImpl8insertAtEPKvjj": [
+              ""
+            ],
+            "_ZN7android10VectorImplC2ERKS0_": [
+              ""
+            ],
+            "_ZN7android10VectorImplC2Ejj": [
+              ""
+            ],
+            "_ZN7android10VectorImplD2Ev": [
+              ""
+            ],
+            "_ZN7android10VectorImplaSERKS0_": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "liblog.so",
+          "kind": "stock system reference",
+          "sha256": "0124e60258fe2d0a16c9bb008358cad2477ced98032a8913018b1b20a10ee79c",
+          "matching_imports": {
+            "__android_log_print": [
+              "LIBLOG"
+            ],
+            "__android_log_assert": [
+              "LIBLOG"
+            ],
+            "__android_log_error_write": [
+              "LIBLOG_M"
+            ]
+          }
+        },
+        {
+          "name": "libc++.so",
+          "kind": "selected platform libc++ prebuilt",
+          "sha256": "64d1f38c5e39c4acf14a0f6ca9f052714f44a33a20c28dd0fce4b93b3cdc258e",
+          "matching_imports": {
+            "_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv": [
+              ""
+            ],
+            "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_": [
+              ""
+            ],
+            "_ZdlPv": [
+              ""
+            ],
+            "_Znaj": [
+              ""
+            ],
+            "_Znwj": [
+              ""
+            ],
+            "_ZNKSt3__119__shared_weak_count13__get_deleterERKSt9type_info": [
+              ""
+            ],
+            "_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv": [
+              ""
+            ],
+            "_ZNSt3__112__next_primeEj": [
+              ""
+            ],
+            "_ZNSt3__119__shared_weak_count14__release_weakEv": [
+              ""
+            ],
+            "_ZNSt3__119__shared_weak_count4lockEv": [
+              ""
+            ],
+            "_ZNSt3__119__shared_weak_countD2Ev": [
+              ""
+            ],
+            "_ZNSt3__15mutex4lockEv": [
+              ""
+            ],
+            "_ZNSt3__15mutex6unlockEv": [
+              ""
+            ],
+            "_ZNSt3__15mutexD1Ev": [
+              ""
+            ],
+            "__cxa_pure_virtual": [
+              ""
+            ],
+            "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6assignEPKc": [
+              ""
+            ],
+            "_ZdaPv": [
+              ""
+            ],
+            "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc": [
+              ""
+            ],
+            "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKcj": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libc.so",
+          "kind": "stock bootstrap bionic reference",
+          "sha256": "f2286a69431faa7691a44c5654c77af5ec4543f46cb300ef5ffc340d6a1b1ac2",
+          "matching_imports": {
+            "__cxa_atexit": [
+              "LIBC"
+            ],
+            "__cxa_finalize": [
+              "LIBC"
+            ],
+            "__stack_chk_fail": [
+              "LIBC"
+            ],
+            "__stack_chk_guard": [
+              "LIBC"
+            ],
+            "abort": [
+              "LIBC"
+            ],
+            "strlen": [
+              "LIBC"
+            ],
+            "__errno": [
+              "LIBC"
+            ],
+            "close": [
+              "LIBC"
+            ],
+            "dup": [
+              "LIBC"
+            ],
+            "strerror": [
+              "LIBC"
+            ],
+            "getpid": [
+              "LIBC"
+            ],
+            "pthread_mutex_lock": [
+              "LIBC"
+            ],
+            "pthread_mutex_unlock": [
+              "LIBC"
+            ],
+            "pthread_mutex_destroy": [
+              "LIBC"
+            ],
+            "pthread_mutex_init": [
+              "LIBC"
+            ],
+            "write": [
+              "LIBC"
+            ],
+            "memcpy": [
+              "LIBC"
+            ],
+            "memmove": [
+              "LIBC"
+            ],
+            "memset": [
+              "LIBC"
+            ]
+          }
+        },
+        {
+          "name": "libm.so",
+          "kind": "stock bootstrap bionic reference",
+          "sha256": "7b022ac73ba14e29256bd7431f2388a488b774c0e63f5cc73d29bd3af5888c90",
+          "matching_imports": {
+            "powf": [
+              "LIBC"
+            ]
+          }
+        },
+        {
+          "name": "libdl.so",
+          "kind": "stock bootstrap bionic reference",
+          "sha256": "a278b8a0f732292e547cc1f17c3019bb7c88bf37fd477fa10000c86bdae19e6e",
+          "matching_imports": {}
+        }
+      ],
+      "libsync_reference_exports": {
+        "sync_file_info": [
+          ""
+        ],
+        "sync_file_info_free": [
+          ""
+        ],
+        "sync_merge": [
+          ""
+        ],
+        "sync_wait": [
+          ""
+        ]
+      },
+      "soname_only_reproduces_patch": true,
+      "experimental_removed_needed": [
+        "libhidltransport.so",
+        "libhwbinder.so"
+      ],
+      "experimental_strict_check": {
+        "reference_set": "public VNDK34 + selected libc++ + stock liblog/libsync/bionic; not final LOS24 outputs",
+        "exit_status": 2,
+        "errors": [
+          "Unresolved symbol: sync_file_info@LIBSYNC",
+          "Unresolved symbol: sync_file_info_free@LIBSYNC",
+          "Unresolved symbol: sync_merge@LIBSYNC",
+          "Unresolved symbol: sync_wait@LIBSYNC"
+        ]
+      }
+    },
+    "arm64": {
+      "files": {
+        "candidate": {
+          "sha256": "48d451ae950e311f729d9ccb503aed41dd4ef695238c4acc803705174eb78416",
+          "bytes": 208392,
+          "soname": "libui-v29.so",
+          "machine": 183,
+          "class": 2
+        },
+        "aosp_snapshot": {
+          "sha256": "f7850b44ee32a46123441daa4cc6f1d553c4a1510bdb3c23f19fb1a16414f58f",
+          "bytes": 173928,
+          "soname": "libui.so",
+          "machine": 183,
+          "class": 2
+        },
+        "original_hwc": {
+          "sha256": "331bf7f27bd92ff3205f38bf908030d51395977cd63d6b0c122ed7a0fae5a865",
+          "bytes": 1077232,
+          "soname": "hwcomposer.kirin970.so",
+          "machine": 183,
+          "class": 2
+        },
+        "generated_hwc": {
+          "sha256": "fa595deb83802277aee4968d633ec342003147ba0bf1b5e6a8c6b5456eb650ad",
+          "bytes": 1247897,
+          "soname": "hwcomposer.kirin970.so",
+          "machine": 183,
+          "class": 2
+        },
+        "stock_ui": {
+          "sha256": "010cf738c73751a3d37e7df88994c0d20e50447a2b956108242ecb9f529eb851",
+          "bytes": 195792,
+          "soname": "libui.so",
+          "machine": 183,
+          "class": 2
+        }
+      },
+      "candidate_needed": [
+        "android.hardware.graphics.allocator@2.0.so",
+        "android.hardware.graphics.allocator@3.0.so",
+        "android.hardware.graphics.common@1.2.so",
+        "android.hardware.graphics.mapper@2.0.so",
+        "android.hardware.graphics.mapper@2.1.so",
+        "android.hardware.graphics.mapper@3.0.so",
+        "libbase.so",
+        "libcutils.so",
+        "libhardware.so",
+        "libhidlbase.so",
+        "libhidltransport.so",
+        "libhwbinder.so",
+        "libsync.so",
+        "libutils.so",
+        "liblog.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ],
+      "candidate_import_count": 99,
+      "candidate_export_count": 440,
+      "load_alignments": [
+        4096,
+        4096,
+        4096,
+        4096
+      ],
+      "import_versions": [
+        "",
+        "LIBC",
+        "LIBLOG",
+        "LIBLOG_M",
+        "LIBSYNC"
+      ],
+      "hwc_imports_unchanged": true,
+      "hwc_needed_rename_only": true,
+      "stock_ui_matched_hwc_imports": {
+        "_ZN7android6Region12subtractSelfERKS0_": [
+          ""
+        ],
+        "_ZN7android6Region13translateSelfEii": [
+          ""
+        ],
+        "_ZN7android6Region16addRectUncheckedEiiii": [
+          ""
+        ],
+        "_ZN7android6Region3setERKNS_4RectE": [
+          ""
+        ],
+        "_ZN7android6Region5clearEv": [
+          ""
+        ],
+        "_ZN7android6Region6orSelfERKNS_4RectE": [
+          ""
+        ],
+        "_ZN7android6Region6orSelfERKS0_": [
+          ""
+        ],
+        "_ZN7android6Region7andSelfERKNS_4RectE": [
+          ""
+        ],
+        "_ZN7android6RegionC1ERKNS_4RectE": [
+          ""
+        ],
+        "_ZN7android6RegionC1Ev": [
+          ""
+        ],
+        "_ZN7android6RegionD1Ev": [
+          ""
+        ],
+        "_ZN7android6RegionaSERKS0_": [
+          ""
+        ],
+        "_ZNK7android6Region3endEv": [
+          ""
+        ],
+        "_ZNK7android6Region5beginEv": [
+          ""
+        ],
+        "_ZNK7android6Region9intersectERKS0_": [
+          ""
+        ],
+        "_ZNK7android4Rect9intersectERKS0_PS0_": [
+          ""
+        ],
+        "_ZNK7android6Region9intersectERKNS_4RectE": [
+          ""
+        ]
+      },
+      "missing_ui_symbols": [],
+      "dependency_references": [
+        {
+          "name": "android.hardware.graphics.allocator@2.0.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "4ee28c44dafa1ede40ea6fc05f34ac768cc2923675c4335b536e7a2435355261",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics9allocator4V2_010IAllocator10getServiceERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "android.hardware.graphics.allocator@3.0.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "cd75551272c22c40f0a9db4d7c7a4f3717e6c4dbade1d5b5551a76ce14a04e64",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics9allocator4V3_010IAllocator10getServiceERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "android.hardware.graphics.common@1.2.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "c736ff900a16a486cd4721080f12e0c85928a8d913cf01025ac2d01016e56161",
+          "matching_imports": {}
+        },
+        {
+          "name": "android.hardware.graphics.mapper@2.0.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "2a627d437d162151ca1d16025d0013f64a9232f50c36a087aa0d5e9735a8780d",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics6mapper4V2_07IMapper10descriptorE": [
+              ""
+            ],
+            "_ZN7android8hardware8graphics6mapper4V2_07IMapper10getServiceERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "android.hardware.graphics.mapper@2.1.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "9fc125462aef3ad4bd7b91077622a63d5627e6c3d874f2652069cacbe6b99984",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics6mapper4V2_17IMapper8castFromERKNS_2spINS2_4V2_07IMapperEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "android.hardware.graphics.mapper@3.0.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "2e6f920d6c86cb8d35db7047fb8144110c7436bfa0bdc5d095baf0c6fde02337",
+          "matching_imports": {
+            "_ZN7android8hardware8graphics6mapper4V3_07IMapper10descriptorE": [
+              ""
+            ],
+            "_ZN7android8hardware8graphics6mapper4V3_07IMapper10getServiceERKNSt3__112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEEb": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libbase.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "1726ee324728b50e7a672681dc08c82aa6a1608dd282eddcc0595ab3a68a8e40",
+          "matching_imports": {
+            "_ZN7android4base12StringPrintfEPKcz": [
+              ""
+            ],
+            "_ZN7android4base13StringAppendFEPNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEPKcz": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libcutils.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "f976440c5b82c7b30194b70b53d2c75a6bf37183929ead1b6bb4512d89b7fe8c",
+          "matching_imports": {
+            "atrace_begin_body": [
+              ""
+            ],
+            "atrace_enabled_tags": [
+              ""
+            ],
+            "atrace_end_body": [
+              ""
+            ],
+            "atrace_is_ready": [
+              ""
+            ],
+            "atrace_setup": [
+              ""
+            ],
+            "native_handle_init": [
+              ""
+            ],
+            "native_handle_close": [
+              ""
+            ],
+            "native_handle_create": [
+              ""
+            ],
+            "native_handle_delete": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libhardware.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "0c9ba62f4f836b821491531ba3c12b68e6b21747d9015a38dd8924f2766c1101",
+          "matching_imports": {}
+        },
+        {
+          "name": "libhidlbase.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "121d93d90c71223c868ee2a7e5bafedece2300b3b8b1f16eef9777ea9fe6dc66",
+          "matching_imports": {
+            "_ZN7android8hardware11hidl_handleC1Ev": [
+              ""
+            ],
+            "_ZN7android8hardware11hidl_handleD1Ev": [
+              ""
+            ],
+            "_ZN7android8hardware11hidl_handleaSEPK13native_handle": [
+              ""
+            ],
+            "_ZN7android8hardware14IPCThreadState13flushCommandsEv": [
+              ""
+            ],
+            "_ZN7android8hardware14IPCThreadState4selfEv": [
+              ""
+            ],
+            "_ZN7android8hardware7details13return_statusD2Ev": [
+              ""
+            ],
+            "_ZN7android8hardware7details13return_statusaSEOS2_": [
+              ""
+            ],
+            "_ZN7android8hardware7details25preloadPassthroughServiceERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE": [
+              ""
+            ],
+            "_ZNK7android8hardware11hidl_handle15getNativeHandleEv": [
+              ""
+            ],
+            "_ZNK7android8hardware11hidl_string5c_strEv": [
+              ""
+            ],
+            "_ZNK7android8hardware7details13return_status8assertOkEv": [
+              ""
+            ],
+            "_ZN7android8hardware11hidl_handleC1EPK13native_handle": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libsync.so",
+          "kind": "stock system reference",
+          "sha256": "55a506b54505ff9a8505a8996fd112e30be309dccf2469468b05d071108def94",
+          "matching_imports": {
+            "sync_file_info": [
+              "LIBSYNC"
+            ],
+            "sync_file_info_free": [
+              "LIBSYNC"
+            ],
+            "sync_merge": [
+              "LIBSYNC"
+            ],
+            "sync_wait": [
+              "LIBSYNC"
+            ]
+          }
+        },
+        {
+          "name": "libutils.so",
+          "kind": "public AOSP VNDK34 reference; not deployed",
+          "sha256": "97b25aba19e069dac1b3840db47a142e274b6b69d7d4c75f21c52ac75c2b3ac6",
+          "matching_imports": {
+            "_ZN7android14sp_report_raceEv": [
+              ""
+            ],
+            "_ZN7android10VectorImpl13editArrayImplEv": [
+              ""
+            ],
+            "_ZN7android10VectorImpl6resizeEm": [
+              ""
+            ],
+            "_ZNK7android7RefBase9decStrongEPKv": [
+              ""
+            ],
+            "_ZNK7android7RefBase9incStrongEPKv": [
+              ""
+            ],
+            "_ZN7android7RefBase10onFirstRefEv": [
+              ""
+            ],
+            "_ZN7android7RefBase13onLastWeakRefEPKv": [
+              ""
+            ],
+            "_ZN7android7RefBase15onLastStrongRefEPKv": [
+              ""
+            ],
+            "_ZN7android7RefBase20onIncStrongAttemptedEjPKv": [
+              ""
+            ],
+            "_ZN7android7RefBaseC2Ev": [
+              ""
+            ],
+            "_ZN7android7RefBaseD2Ev": [
+              ""
+            ],
+            "_ZN7android10VectorImpl13finish_vectorEv": [
+              ""
+            ],
+            "_ZN7android16SortedVectorImpl3addEPKv": [
+              ""
+            ],
+            "_ZN7android16SortedVectorImpl6removeEPKv": [
+              ""
+            ],
+            "_ZN7android16SortedVectorImplC2Emj": [
+              ""
+            ],
+            "_ZN7android16SortedVectorImplD2Ev": [
+              ""
+            ],
+            "_ZN7android10VectorImpl12appendVectorERKS0_": [
+              ""
+            ],
+            "_ZN7android10VectorImpl3addEPKv": [
+              ""
+            ],
+            "_ZN7android10VectorImpl5clearEv": [
+              ""
+            ],
+            "_ZN7android10VectorImpl8insertAtEPKvmm": [
+              ""
+            ],
+            "_ZN7android10VectorImplC2ERKS0_": [
+              ""
+            ],
+            "_ZN7android10VectorImplC2Emj": [
+              ""
+            ],
+            "_ZN7android10VectorImplD2Ev": [
+              ""
+            ],
+            "_ZN7android10VectorImplaSERKS0_": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "liblog.so",
+          "kind": "stock system reference",
+          "sha256": "833d990996913f43570bf45b914634dfb954cb0c3960d9509ddf3a7f0a436278",
+          "matching_imports": {
+            "__android_log_print": [
+              "LIBLOG"
+            ],
+            "__android_log_assert": [
+              "LIBLOG"
+            ],
+            "__android_log_error_write": [
+              "LIBLOG_M"
+            ]
+          }
+        },
+        {
+          "name": "libc++.so",
+          "kind": "selected platform libc++ prebuilt",
+          "sha256": "25fb36995766b0af886eb9d39f843f969d7eb00ba8e9ae646660ac20f0a0827d",
+          "matching_imports": {
+            "_ZNKSt3__121__basic_string_commonILb1EE20__throw_length_errorEv": [
+              ""
+            ],
+            "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_": [
+              ""
+            ],
+            "_ZdlPv": [
+              ""
+            ],
+            "_Znam": [
+              ""
+            ],
+            "_Znwm": [
+              ""
+            ],
+            "_ZNKSt3__119__shared_weak_count13__get_deleterERKSt9type_info": [
+              ""
+            ],
+            "_ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv": [
+              ""
+            ],
+            "_ZNSt3__112__next_primeEm": [
+              ""
+            ],
+            "_ZNSt3__119__shared_weak_count14__release_weakEv": [
+              ""
+            ],
+            "_ZNSt3__119__shared_weak_count4lockEv": [
+              ""
+            ],
+            "_ZNSt3__119__shared_weak_countD2Ev": [
+              ""
+            ],
+            "_ZNSt3__15mutex4lockEv": [
+              ""
+            ],
+            "_ZNSt3__15mutex6unlockEv": [
+              ""
+            ],
+            "_ZNSt3__15mutexD1Ev": [
+              ""
+            ],
+            "__cxa_pure_virtual": [
+              ""
+            ],
+            "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6assignEPKc": [
+              ""
+            ],
+            "_ZdaPv": [
+              ""
+            ],
+            "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc": [
+              ""
+            ],
+            "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKcm": [
+              ""
+            ]
+          }
+        },
+        {
+          "name": "libc.so",
+          "kind": "stock bootstrap bionic reference",
+          "sha256": "fd3e195abe970846351c71e47eaa0b3829c69428738c98f1ab45f025495845a6",
+          "matching_imports": {
+            "__cxa_finalize": [
+              "LIBC"
+            ],
+            "__cxa_atexit": [
+              "LIBC"
+            ],
+            "__stack_chk_fail": [
+              "LIBC"
+            ],
+            "abort": [
+              "LIBC"
+            ],
+            "memcpy": [
+              "LIBC"
+            ],
+            "memset": [
+              "LIBC"
+            ],
+            "strlen": [
+              "LIBC"
+            ],
+            "__errno": [
+              "LIBC"
+            ],
+            "close": [
+              "LIBC"
+            ],
+            "dup": [
+              "LIBC"
+            ],
+            "strerror": [
+              "LIBC"
+            ],
+            "memmove": [
+              "LIBC"
+            ],
+            "getpid": [
+              "LIBC"
+            ],
+            "pthread_mutex_lock": [
+              "LIBC"
+            ],
+            "pthread_mutex_unlock": [
+              "LIBC"
+            ],
+            "pthread_mutex_destroy": [
+              "LIBC"
+            ],
+            "pthread_mutex_init": [
+              "LIBC"
+            ],
+            "write": [
+              "LIBC"
+            ]
+          }
+        },
+        {
+          "name": "libm.so",
+          "kind": "stock bootstrap bionic reference",
+          "sha256": "83c93a984861893d4acda0bc0b26b95ec4739c70216e0442fa014f989a135e08",
+          "matching_imports": {
+            "powf": [
+              "LIBC"
+            ]
+          }
+        },
+        {
+          "name": "libdl.so",
+          "kind": "stock bootstrap bionic reference",
+          "sha256": "975b5f56014aee297b0c4875d7c377c9b09368d7f74fbdf1d72a20f806da0960",
+          "matching_imports": {}
+        }
+      ],
+      "libsync_reference_exports": {
+        "sync_file_info": [
+          ""
+        ],
+        "sync_wait": [
+          ""
+        ],
+        "sync_file_info_free": [
+          ""
+        ],
+        "sync_merge": [
+          ""
+        ]
+      },
+      "soname_only_reproduces_patch": true,
+      "experimental_removed_needed": [
+        "libhidltransport.so",
+        "libhwbinder.so"
+      ],
+      "experimental_strict_check": {
+        "reference_set": "public VNDK34 + selected libc++ + stock liblog/libsync/bionic; not final LOS24 outputs",
+        "exit_status": 2,
+        "errors": [
+          "Unresolved symbol: sync_file_info@LIBSYNC",
+          "Unresolved symbol: sync_file_info_free@LIBSYNC",
+          "Unresolved symbol: sync_merge@LIBSYNC",
+          "Unresolved symbol: sync_wait@LIBSYNC"
+        ]
+      }
+    }
+  },
+  "limitations": [
+    "The stock libsync reference lacks LIBSYNC symbol versions; the LOS24 source map declares them, so this failure is not proof that a final LOS24 libsync will fail.",
+    "Unmodified candidate requires libhwbinder, whose current visibility does not permit hardware/huawei modules.",
+    "No final LOS24 dependency set has been built or checked; no runtime or C++ layout compatibility is established.",
+    "No proprietary BLA binary or deployment dependency stack is included."
+  ]
+}
