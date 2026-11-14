@@ -1,0 +1,95 @@
+{
+  "source_revision": "a155fffda456a650c3b89c5d13092172446782a8",
+  "source_remote": "https://github.com/TeamWin/android_hardware_interfaces",
+  "unmodified_files": {
+    "memtrack/1.0/default/Memtrack.cpp": {
+      "sha256": "22ed6f26b4ecb9bf36d739dfbfd35756d74063837eb777ffc33e7d0c2fb9b53e",
+      "last_commit": "d66d0ddaf35f88d613c32814154b580cd9f7dcc5 Steven Moreland <smoreland@google.com>"
+    },
+    "memtrack/1.0/default/Memtrack.h": {
+      "sha256": "5685deb2bc96a9c33fa1331b69fdff955b21836dc9a54c7cc1279c6410e4dd79",
+      "last_commit": "56dfb756b87ad4974eef07b7815767c07d807ead Connor O'Brien <connoro@google.com>"
+    },
+    "memtrack/1.0/default/service.cpp": {
+      "sha256": "cca9a29337d9165a99a531f0ca1d9084ef4c32c104965ee10e828dfa160c4fc6",
+      "last_commit": "5985dedba2cba70ea85e82c246d88be8d9f37ec3 Chris Phoenix <cphoenix@google.com>"
+    },
+    "memtrack/1.0/default/android.hardware.memtrack@1.0-service.rc": {
+      "sha256": "28f305d029a0aac7daaeb97e748b3be0d797e3c66a7aa24571c2e507b0141456",
+      "last_commit": "551b8d15ce56661f012a37772ffd611c0fa4915a Felix <google@ix5.org>"
+    },
+    "vibrator/1.0/default/Vibrator.cpp": {
+      "sha256": "1a09fbe06baf183ea7450fd56b69d709ffc903127e730087ea1bcd913c1d3044",
+      "last_commit": "bf3bc86bea21d6d2ee504619d3e939b856d06850 Michael Wright <michaelwr@google.com>"
+    },
+    "vibrator/1.0/default/Vibrator.h": {
+      "sha256": "6720f57591741ef02d3b99454fa692c111e2db5499dfa96ff6e0036c67bdc2a4",
+      "last_commit": "bf3bc86bea21d6d2ee504619d3e939b856d06850 Michael Wright <michaelwr@google.com>"
+    },
+    "vibrator/1.0/default/service.cpp": {
+      "sha256": "1adb6ea3d6a8540c06dc609d6bcd46d9a7ee68d2b2c6ae80e8e72cda6f5f5a62",
+      "last_commit": "79f18a280a26d3cbca436f1a83d8cf67cf0653c7 Chris Phoenix <cphoenix@google.com>"
+    },
+    "vibrator/1.0/default/android.hardware.vibrator@1.0-service.rc": {
+      "sha256": "6d8a7f5b335af2f3aee5cbf2cdb493e5aec13b7505e4f4e0385f4aa9df30916c",
+      "last_commit": "551b8d15ce56661f012a37772ffd611c0fa4915a Felix <google@ix5.org>"
+    },
+    "memtrack/1.0/IMemtrack.hal": {
+      "sha256": "c66902fe48d687ac6740a3e32ae55fb75532c48c36c6386461c2b4416ad2e0f1",
+      "last_commit": "40d3a9bd8c62714ee58f9363c4456f764aa5a95d Andreas Huber <andih@google.com>"
+    },
+    "memtrack/1.0/types.hal": {
+      "sha256": "860bacd8b11a269c40567542b613fe4ca448d5cb4326d0058899e608e89dfca1",
+      "last_commit": "40d3a9bd8c62714ee58f9363c4456f764aa5a95d Andreas Huber <andih@google.com>"
+    }
+  },
+  "source_history": [
+    {
+      "commit": "97b2f250880468ad8c7ed370a420d2f6ba904c6d",
+      "author": "Ruchi Kandoi <kandoiruchi@google.com>",
+      "change": "Original memtrack 1.0 implementation"
+    },
+    {
+      "commit": "9d8551ab6de3364ac77625f3ed96b1c463498fe3",
+      "author": "Ruchi Kandoi <kandoiruchi@google.com>",
+      "change": "Original memtrack 1.0 service"
+    },
+    {
+      "commit": "89fc3bed2ad6a3a69467a5a4df823d8fcccbafaf",
+      "author": "Prashant Malani <pmalani@google.com>",
+      "change": "Original vibrator 1.0 implementation"
+    },
+    {
+      "commit": "5e4eb5ed985198610f5ce5527709db21c098a950",
+      "author": "Prashant Malani <pmalani@google.com>",
+      "change": "Original vibrator 1.0 service"
+    }
+  ],
+  "adapted_build_inputs": {
+    "memtrack/1.0/default/Android.bp": "9cffa8780685b0f4e2c8d4eedb4c9be98520d76d347a1a09584dc8c98548fb4f",
+    "vibrator/1.0/default/Android.bp": "e7d1d78d213a19e0e46b22d63b43023ea547eae5fba65e478cd8cd4828f40ab0"
+  },
+  "stock_evidence": {
+    "scope": "read-only extraction/manifest evidence; no HAL execution or device command",
+    "vendor_manifest_sha256": "6c02fedf55b86f9b5860a85a9b87ba985498ec63ceaa378d447d725834fe9a6d",
+    "modules": {
+      "vendor/lib/hw/memtrack.default.so": {
+        "sha256": "d13293f629a3f8421d2ec88b00fd5ba91e8c7a434ddaef631a6686fda0e057f5",
+        "global_module_symbol": "HMI"
+      },
+      "vendor/lib64/hw/memtrack.default.so": {
+        "sha256": "bf43ffeabb3fdc39d6decba9646ee37c7b59109f9e4ac1f25a869b74c76d29df",
+        "global_module_symbol": "HMI"
+      },
+      "vendor/lib/hw/vibrator.default.so": {
+        "sha256": "fd2a4fc9e064a363833c0c9f611ae4be901456b383fd68007e26fcc1fd9acae6",
+        "global_module_symbol": "HMI"
+      },
+      "vendor/lib64/hw/vibrator.default.so": {
+        "sha256": "15dac69b0c889ddf894023bb4ef9d8feca0633030c487a3a94874628d9dc21bc",
+        "global_module_symbol": "HMI"
+      }
+    }
+  },
+  "notice_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+}

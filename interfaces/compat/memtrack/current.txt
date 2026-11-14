@@ -1,0 +1,3 @@
+# Copied from AOSP hardware/interfaces a155fffda456a650c3b89c5d13092172446782a8.
+c66902fe48d687ac6740a3e32ae55fb75532c48c36c6386461c2b4416ad2e0f1 android.hardware.memtrack@1.0::IMemtrack
+860bacd8b11a269c40567542b613fe4ca448d5cb4326d0058899e608e89dfca1 android.hardware.memtrack@1.0::types

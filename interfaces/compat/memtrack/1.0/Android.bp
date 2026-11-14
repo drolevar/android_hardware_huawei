@@ -1,0 +1,14 @@
+// Adapted from AOSP hardware/interfaces at a155fffda456a650c3b89c5d13092172446782a8.
+
+hidl_interface {
+    name: "android.hardware.memtrack@1.0",
+    root: "android.hardware.memtrack",
+    srcs: [
+        "types.hal",
+        "IMemtrack.hal",
+    ],
+    interfaces: [
+        "android.hidl.base@1.0",
+    ],
+    gen_java: true,
+}

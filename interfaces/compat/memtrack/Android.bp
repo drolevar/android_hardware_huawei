@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package {
+    default_applicable_licenses: ["huawei_compat_memtrack_license"],
+}
+
+license {
+    name: "huawei_compat_memtrack_license",
+    visibility: [":__subpackages__"],
+    license_kinds: ["SPDX-license-identifier-Apache-2.0"],
+    license_text: ["NOTICE"],
+}
+
+hidl_package_root {
+    name: "android.hardware.memtrack",
+    use_current: true,
+    require_frozen: true,
+}
