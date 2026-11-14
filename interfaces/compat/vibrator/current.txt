@@ -1,0 +1,4 @@
+# AOSP frozen Android 8.0 API; copied from hardware/interfaces
+# a155fffda456a650c3b89c5d13092172446782a8/current.txt (lines 157-158).
+06ea64cc3565777f3b259e400ffa7100d07f3827ad9357b0c5d3c651384e5553 android.hardware.vibrator@1.0::IVibrator
+0fecd34ae64f32eff6aa615fd662349242c0b8b6e303ef05a7cb5776c732f413 android.hardware.vibrator@1.0::types

@@ -1,0 +1,16 @@
+// Adapted from AOSP hardware/interfaces/vibrator/1.0/Android.bp.
+// See ../README.md for the exact source revision and API hashes.
+
+hidl_interface {
+    name: "android.hardware.vibrator@1.0",
+    root: "android.hardware.vibrator",
+    srcs: [
+        "types.hal",
+        "IVibrator.hal",
+    ],
+    interfaces: [
+        "android.hidl.base@1.0",
+    ],
+    gen_java: true,
+    gen_java_constants: true,
+}
