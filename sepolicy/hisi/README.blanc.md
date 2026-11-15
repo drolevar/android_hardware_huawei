@@ -30,3 +30,10 @@ python3 -B -m unittest discover -s sepolicy/hisi/tests -v
 
 The current-platform `selinux_policy` target is the integration check; these
 host tests do not establish hardware functionality.
+
+The policy include also inherited temporary `androidboot.selinux=permissive`
+and `SELINUX_IGNORE_NEVERALLOWS := true` settings. They are removed: this include
+now adds only policy directories, preserving the platform/caller defaults.
+Regression checks evaluate the real include with GNU Make. Full policy
+compilation with neverallow validation remains a required integration check;
+removing the bypasses is not a claim that the existing domains are operational.

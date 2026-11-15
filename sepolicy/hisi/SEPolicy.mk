@@ -11,7 +11,3 @@ SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += \
 
 SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += \
     hardware/huawei/sepolicy/hisi/public
-
-# tmp
-BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
-SELINUX_IGNORE_NEVERALLOWS := true
