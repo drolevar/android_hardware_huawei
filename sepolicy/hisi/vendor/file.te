@@ -8,4 +8,4 @@ type splashtwo_file, file_type;
 type teecd_data_file, file_type, data_file_type;
 # BLA .225 stock policy keeps legacy core-data paths distinct from /sec_storage.
 type teecd_data_file_system, file_type, data_file_type, core_data_file_type;
-type vendor_teecd_data_file, file_type, vendor_file_type, data_file_type;
+type vendor_teecd_data_file, file_type, data_file_type;

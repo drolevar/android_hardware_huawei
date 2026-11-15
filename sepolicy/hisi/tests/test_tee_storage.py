@@ -44,8 +44,10 @@ class TeeStorageTests(unittest.TestCase):
             for path in (base, base + "/private/object"):
                 with self.subTest(path=path):
                     attrs = attributes(label(path))
-                    self.assertIn("vendor_file_type", attrs)
+                    self.assertIn("file_type", attrs)
                     self.assertIn("data_file_type", attrs)
+                    # Writable /data/vendor is not the read-only /vendor partition.
+                    self.assertNotIn("vendor_file_type", attrs)
                     self.assertNotIn("core_data_file_type", attrs)
 
     def test_secure_partition_does_not_share_core_or_vendor_data_type(self):

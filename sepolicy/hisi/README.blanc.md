@@ -37,3 +37,11 @@ now adds only policy directories, preserving the platform/caller defaults.
 Regression checks evaluate the real include with GNU Make. Full policy
 compilation with neverallow validation remains a required integration check;
 removing the bypasses is not a claim that the existing domains are operational.
+
+With neverallow validation restored, the inherited `vendor_teecd_data_file`
+also exposed 336 violations: it was both `data_file_type` and `vendor_file_type`.
+The latter classifies files on the read-only vendor partition and grants generic
+read/execute access that is invalid for writable vendor data. Stock vendor CIL
+classifies its corresponding data type without `vendor_file_type`. Remove that
+attribute, preserving the data label/path and reducing generic access. The host
+regression checks pin this distinction as well as core/vendor data separation.
