@@ -2,7 +2,16 @@
     SPDX-FileCopyrightText: The LineageOS Project
     SPDX-License-Identifier: Apache-2.0
 -->
-<compatibility-matrix version="1.0" type="framework" level="5">
+<compatibility-matrix version="1.0" type="framework">
+    <!-- Device-specific framework additions; not a platform FCM level. -->
+    <hal format="hidl" optional="true">
+        <name>android.hardware.memtrack</name>
+        <version>1.0</version>
+        <interface>
+            <name>IMemtrack</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
     <hal format="hidl" optional="true">
         <name>android.hardware.audio</name>
         <version>5.0</version>
