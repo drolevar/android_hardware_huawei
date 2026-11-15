@@ -29,3 +29,29 @@ The inherited VINTF matrices, HIDL interfaces, init code, health/IR services,
 and SELinux policy need to be built and tested with Lineage 24 and the exact
 BLA vendor stack. Source declarations do not establish working hardware or
 LineageOS charter compliance. Existing authorship and licenses are retained.
+
+## Kernel AVB descriptor name
+
+`BOARD_HUAWEI_KERNEL_AVB_PARTITION_NAME` overrides the hash descriptor name for
+only the kernel-bearing `boot.img` recipe. It defaults to `boot` for existing
+products; BLA selects `kernel`, matching its captured stock descriptor. The build
+filename and physical partition name are separate concepts. Signing arguments,
+partition size and the normal/recovery ramdisk rules are unchanged.
+
+Run the real Make/image-tool host regression suite with:
+
+```sh
+ANDROID_BUILD_TOP=/path/to/android python3 -B -m unittest discover -s tests -v
+```
+
+It uses actual Android size-check macros, Huawei mkbootimg and avbtool, with
+synthetic payloads and the public AVB test key. Checks include unchanged defaults,
+BLA opt-in, payload/header identity, separate ramdisk/recovery naming, retained
+signing arguments, tamper rejection and oversized-image rejection. Host aliases
+let avbtool resolve descriptor names without renaming Android build outputs.
+These checks do not establish bootloader trust or handset boot behavior.
+
+The captured BLA kernel partition contains a valid AVB image ending 4 KiB before
+its physical end and a stale invalid footer at the end. That observation does not
+prove a mandatory 4 KiB reservation. This change leaves the existing full-capacity
+rule in place; the final image/trust/recovery design still requires validation.

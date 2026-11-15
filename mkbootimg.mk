@@ -12,6 +12,10 @@ BOARD_CUSTOM_BOOTIMG_HAS_RAMDISK ?= true
 #
 HW_MKBOOTIMG := $(TARGET_KERNEL_SOURCE)/tools/mkbootimg
 
+# The build output is boot.img; some Huawei boot chains name its partition kernel.
+# Keep the shared default unless the device provides measured naming evidence.
+BOARD_HUAWEI_KERNEL_AVB_PARTITION_NAME ?= boot
+
 #
 # kernel.img
 #
@@ -29,7 +33,7 @@ $(INSTALLED_BOOTIMAGE_TARGET): $(HW_MKBOOTIMG) $(AVBTOOL) $(INTERNAL_BOOTIMAGE_F
 	$(hide) $(AVBTOOL) add_hash_footer \
 	  --image $@ \
 	  --partition_size $(BOARD_BOOTIMAGE_PARTITION_SIZE) \
-	  --partition_name boot $(INTERNAL_AVB_BOOT_SIGNING_ARGS) \
+	  --partition_name "$(BOARD_HUAWEI_KERNEL_AVB_PARTITION_NAME)" $(INTERNAL_AVB_BOOT_SIGNING_ARGS) \
 	  $(BOARD_AVB_BOOT_ADD_HASH_FOOTER_ARGS)
 
 #
