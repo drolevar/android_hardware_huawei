@@ -1,0 +1,10 @@
+//
+// SPDX-FileCopyrightText: The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+cc_library_shared {
+    name: "libshim_libxml2",
+    proprietary: true,
+    srcs: ["libxml2_shim.c"],
+}
