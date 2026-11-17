@@ -1,0 +1,20 @@
+//
+// SPDX-FileCopyrightText: The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+vintf_compatibility_matrix {
+    name: "framework_compatibility_matrix.5.blanc.xml",
+    stem: "compatibility_matrix.5.xml",
+    srcs: [
+        "compatibility_matrix.5.xml",
+    ],
+}
+
+vintf_compatibility_matrix {
+    name: "framework_compatibility_matrix.6.blanc.xml",
+    stem: "compatibility_matrix.6.xml",
+    srcs: [
+        "compatibility_matrix.6.xml",
+    ],
+}
