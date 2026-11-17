@@ -85,6 +85,13 @@ int imonitor_set_param_class_v2(struct imonitor_eventobj* eventobj, const char* 
     return 0;
 }
 
+int imonitor_fill_array_param_class_v2(struct imonitor_eventobj* eventobj, const char* param,
+                                       const struct imonitor_eventobj* value) {
+    ALOGV("%s: eventobj: %p, param: %s, value: %p", __func__, eventobj,
+          param ? param : "(null)", value);
+    return 0;
+}
+
 int imonitor_set_param_string(struct imonitor_eventobj* eventobj, unsigned short paramId,
                               const char* value) {
     ALOGV("%s: eventobj: %p, paramId: %d, value: %s", __func__, eventobj, paramId, value);
