@@ -30,13 +30,16 @@ and SELinux policy need to be built and tested with Lineage 24 and the exact
 BLA vendor stack. Source declarations do not establish working hardware or
 LineageOS charter compliance. Existing authorship and licenses are retained.
 
-## Kernel AVB descriptor name
+## Kernel and ramdisk AVB descriptor names
 
 `BOARD_HUAWEI_KERNEL_AVB_PARTITION_NAME` overrides the hash descriptor name for
-only the kernel-bearing `boot.img` recipe. It defaults to `boot` for existing
-products; BLA selects `kernel`, matching its captured stock descriptor. The build
-filename and physical partition name are separate concepts. Signing arguments,
-partition size and the normal/recovery ramdisk rules are unchanged.
+only the kernel-bearing `boot.img` recipe, and
+`BOARD_HUAWEI_RAMDISK_AVB_PARTITION_NAME` overrides the hash descriptor name for
+the split normal ramdisk `boot_ramdisk.img` recipe. Both default to `boot` for
+existing products; BLA selects `kernel` and `ramdisk`, matching its captured stock
+descriptors. The build filename and physical partition name are separate
+concepts. Signing arguments, partition sizes and the recovery rules are
+unchanged.
 
 Run the real Make/image-tool host regression suite with:
 

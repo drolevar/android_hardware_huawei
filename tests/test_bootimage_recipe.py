@@ -16,8 +16,8 @@ import unittest
 HARDWARE = Path(__file__).resolve().parents[1]
 
 
-def make_fixture(top, work, *, descriptor=None, signed=False,
-                 partition_size=1048576, kernel=None):
+def make_fixture(top, work, *, descriptor=None, ramdisk_descriptor=None,
+                 signed=False, partition_size=1048576, kernel=None):
     work.mkdir(parents=True, exist_ok=True)
     payload = work / "Image.gz"
     payload.write_bytes(kernel if kernel is not None else gzip.compress(b"synthetic kernel", mtime=0))
@@ -34,6 +34,8 @@ def make_fixture(top, work, *, descriptor=None, signed=False,
     key = top / "external/avb/test/data/testkey_rsa2048.pem"
     signing = f"--algorithm SHA256_RSA2048 --key {key}" if signed else "--algorithm NONE"
     setting = "" if descriptor is None else f"BOARD_HUAWEI_KERNEL_AVB_PARTITION_NAME := {descriptor}\n"
+    if ramdisk_descriptor is not None:
+        setting += f"BOARD_HUAWEI_RAMDISK_AVB_PARTITION_NAME := {ramdisk_descriptor}\n"
     text = "\n".join(macros) + f"""
 PRODUCT_OUT := {work}
 TARGET_KERNEL_SOURCE := {top / 'kernel/huawei/kirin970'}
@@ -79,8 +81,10 @@ class BootImageRecipeTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.work = Path(self.temp.name)
 
-    def build(self, descriptor=None, *, target="boot.img", signed=False, kernel=None):
+    def build(self, descriptor=None, *, ramdisk_descriptor=None, target="boot.img",
+              signed=False, kernel=None):
         makefile = make_fixture(self.top, self.work, descriptor=descriptor,
+                                ramdisk_descriptor=ramdisk_descriptor,
                                 signed=signed, kernel=kernel)
         image = self.work / target
         proc = subprocess.run(["make", "-rR", "-s", "-f", str(makefile), str(image)],
@@ -135,6 +139,17 @@ class BootImageRecipeTest(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertRegex(self.info(image), r"Partition Name:\s+boot\n")
         self.assertEqual(self.verify(image).returncode, 0)
+
+    def test_bla_opt_in_sets_ramdisk_descriptor_and_preserves_recovery(self):
+        image, proc = self.build("kernel", ramdisk_descriptor="ramdisk", target="boot_ramdisk.img")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertRegex(self.info(image), r"Partition Name:\s+ramdisk\n")
+        self.assertEqual(image.stat().st_size, 1048576)
+        self.assertEqual(self.verify(image).returncode, 0)
+        rec_img, rec_proc = self.build("kernel", ramdisk_descriptor="ramdisk", target="recovery.img")
+        self.assertEqual(rec_proc.returncode, 0, rec_proc.stdout + rec_proc.stderr)
+        self.assertRegex(self.info(rec_img), r"Partition Name:\s+recovery\n")
+        self.assertEqual(self.verify(rec_img).returncode, 0)
 
     def test_kernel_override_does_not_change_recovery_descriptor(self):
         image, proc = self.build("kernel", target="recovery.img")
