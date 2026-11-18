@@ -177,6 +177,21 @@ class BootImageRecipeTest(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("too large", proc.stdout + proc.stderr)
 
+    def test_bpf_kver_override_property_contexts_and_sepolicy_mk(self):
+        sepolicy_mk = (HARDWARE / "sepolicy/hisi/SEPolicy.mk").read_text()
+        self.assertIn("SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS", sepolicy_mk)
+        self.assertIn("hardware/huawei/sepolicy/hisi/private", sepolicy_mk)
+        prop_ctx = (HARDWARE / "sepolicy/hisi/private/property_contexts").read_text()
+        lines = [
+            line.strip().split()
+            for line in prop_ctx.splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        self.assertIn(
+            ["ro.bpf.kver_override", "u:object_r:exported_default_prop:s0", "exact", "string"],
+            lines,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
