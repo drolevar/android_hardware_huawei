@@ -115,7 +115,7 @@
 /data/vendor/sec_storage_data(/.*)?             u:object_r:vendor_teecd_data_file:s0
 /data/vendor/sec_storage_data_users(/.*)?       u:object_r:vendor_teecd_data_file:s0
 /dev/tc_ns_client                               u:object_r:teecd_device:s0
-/vendor/bin/hw/vendor\.huawei\.hardware\.libteec@[0-9]\.0-service u:object_r:vendor_hal_hisi_libteec_default_exec:s0
+/vendor/bin/hw/vendor\.huawei\.hardware\.libteec@[0-9]\.0-service u:object_r:hal_libteec_default_exec:s0
 /vendor/bin/system_teecd                        u:object_r:vendor_hisi_teecd_exec:s0
 /vendor/bin/teecd                               u:object_r:tee_exec:s0
 

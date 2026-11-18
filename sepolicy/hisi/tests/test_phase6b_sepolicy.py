@@ -146,6 +146,13 @@ class Phase6BSepolicyTests(unittest.TestCase):
         self.assertIn("typealias hal_libteec_default_exec alias vendor_hal_hisi_libteec_default_exec;", libteec_te)
         self.assertIn("hal_client_domain(hal_drm_default, vendor_hal_hisi_libteec)", libteec_te)
 
+        vfc = (VENDOR / "file_contexts").read_text()
+        self.assertIn(
+            "/vendor/bin/hw/vendor\\.huawei\\.hardware\\.libteec@[0-9]\\.0-service u:object_r:hal_libteec_default_exec:s0",
+            vfc,
+        )
+        self.assertNotIn("u:object_r:vendor_hal_hisi_libteec_default_exec:s0", vfc)
+
         prop_te = (VENDOR / "property.te").read_text()
         self.assertIn("vendor_internal_prop(vendor_xcollie_prop)", prop_te)
         prop_ctx = (VENDOR / "property_contexts").read_text().splitlines()
