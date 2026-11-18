@@ -1,0 +1,97 @@
+# Kirin 970 HALs and charger_vendor rules grounded in .225 policy
+
+# Keymaster
+allow hal_keymaster_default kmsg_device:chr_file { getattr open read write };
+allow hal_keymaster_default self:global_capability2_class_set syslog;
+allow hal_keymaster_default vendor_logcat_data_file:dir create_dir_perms;
+allow hal_keymaster_default vendor_logcat_data_file:file create_file_perms;
+
+# Graphics allocator (Mali gralloc)
+allow hal_graphics_allocator_default graphics_device:dir search;
+allow hal_graphics_allocator_default graphics_device:chr_file rw_file_perms;
+allow hal_graphics_allocator_default ion_device:chr_file rw_file_perms;
+allow hal_graphics_allocator_default gpu_device:chr_file rw_file_perms;
+allow {
+    vendor_hal_hisi_display_default
+    vendor_hal_hisi_media_default
+    hal_sensors_default
+} hal_graphics_allocator_default:fd use;
+
+# Graphics composer, HiSilicon display & media HALs
+vndbinder_use(hal_graphics_composer_default)
+vndbinder_use(vendor_hal_hisi_display_default)
+vndbinder_use(vendor_hal_hisi_media_default)
+
+hal_client_domain(hal_graphics_composer_default, vendor_hal_hisi_display)
+hal_client_domain(hal_graphics_composer_default, vendor_hal_hisi_perf)
+
+allow {
+    hal_graphics_composer_default
+    vendor_hal_hisi_display_default
+    vendor_hal_hisi_media_default
+} { graphics_device gpu_device ion_device }:chr_file rw_file_perms;
+allow { hal_graphics_composer_default vendor_hal_hisi_display_default } graphics_device:dir search;
+allow vendor_hal_hisi_media_default {
+    vendor_jpu_device
+    vendor_vdec_device
+    vendor_venc_device
+    vendor_cambuf_device
+}:chr_file rw_file_perms;
+
+allow { hal_graphics_composer_default vendor_hal_hisi_display_default } sysfs_framebuffer:dir r_dir_perms;
+allow { hal_graphics_composer_default vendor_hal_hisi_display_default } sysfs_framebuffer:file rw_file_perms;
+allow { hal_graphics_composer_default vendor_hal_hisi_display_default } {
+    vendor_hwcdump_data_file
+    vendor_logcat_data_file
+}:dir create_dir_perms;
+allow { hal_graphics_composer_default vendor_hal_hisi_display_default } {
+    vendor_hwcdump_data_file
+    vendor_logcat_data_file
+}:file create_file_perms;
+
+# Health HAL & offline charger
+r_dir_file({ hal_health_default charger_vendor }, sysfs_type)
+allow { hal_health_default charger_vendor } {
+    sysfs
+    sysfs_batteryinfo
+    sysfs_power
+    sysfs_pg
+}:file rw_file_perms;
+allow { hal_health_default charger_vendor } splashtwo_file:dir create_dir_perms;
+allow { hal_health_default charger_vendor } splashtwo_file:file create_file_perms;
+allow charger_vendor kmsg_device:chr_file { getattr open write };
+
+# NFC
+allow hal_nfc_default nfc_device:chr_file rw_file_perms;
+allow hal_nfc_default vendor_nfc_data_file:dir create_dir_perms;
+allow hal_nfc_default vendor_nfc_data_file:file create_file_perms;
+r_dir_file(hal_nfc_default, sysfs_type)
+allow hal_nfc_default { sysfs_nfc_power_writable sysfs_hisee }:file rw_file_perms;
+
+# Secure Element (HiSEE)
+allow hal_secure_element_default sysfs_hisee:dir r_dir_perms;
+allow hal_secure_element_default sysfs_hisee:file rw_file_perms;
+r_dir_file(hal_secure_element_default, hisee_data_file)
+
+# IR & Vibrator
+allow hal_ir_default vendor_irda_device:chr_file rw_file_perms;
+r_dir_file(hal_ir_default, sysfs_type)
+allow hal_ir_default sysfs:file rw_file_perms;
+
+allow hal_vibrator_default vendor_haptic_device:chr_file rw_file_perms;
+r_dir_file(hal_vibrator_default, sysfs_type)
+allow hal_vibrator_default { sysfs sysfs_vibrator sysfs_leds }:file rw_file_perms;
+
+# Power & Perf HALs
+allow { hal_power_default vendor_hal_hisi_perf_default } vendor_perf_ctrl_device:chr_file rw_file_perms;
+r_dir_file({ hal_power_default vendor_hal_hisi_perf_default }, sysfs_type)
+allow { hal_power_default vendor_hal_hisi_perf_default } {
+    sysfs
+    sysfs_devices_system_cpu
+    sysfs_thermal
+    sysfs_pg
+    sysfs_gpu
+    sysfs_power
+    sysfs_devfreq_cur
+    sysfs_devfreq_dir
+}:file rw_file_perms;

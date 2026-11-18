@@ -1,0 +1,9 @@
+allow fsck {
+    vendor_teecd_blkdev
+    vendor_splash2_block_device
+    vendor_hisee_blkdev
+    vendor_modem_block_device
+}:blk_file rw_file_perms;
+
+r_dir_file(fsck, sysfs_devices_block)
+dontaudit fsck sysfs:file getattr;

@@ -2,3 +2,98 @@ type vendor_hisi_oeminfo_nvm_server, domain;
 type vendor_hisi_oeminfo_nvm_server_exec, exec_type, vendor_file_type, file_type;
 
 init_daemon_domain(vendor_hisi_oeminfo_nvm_server)
+
+allow vendor_hisi_oeminfo_nvm_server self:global_capability_class_set {
+    chown
+    fowner
+    fsetid
+    setgid
+    setuid
+    sys_admin
+};
+
+allow vendor_hisi_oeminfo_nvm_server block_device:dir search;
+allow vendor_hisi_oeminfo_nvm_server {
+    vendor_oeminfo_nvm_device
+    vendor_nve_block_device
+    vendor_certification_device
+}:blk_file rw_file_perms;
+allowxperm vendor_hisi_oeminfo_nvm_server vendor_oeminfo_nvm_device:blk_file ioctl 0x1260;
+
+allow vendor_hisi_oeminfo_nvm_server device:dir rw_dir_perms;
+type_transition vendor_hisi_oeminfo_nvm_server device:{ dir file lnk_file sock_file fifo_file } vendor_oeminfo_device;
+allow vendor_hisi_oeminfo_nvm_server vendor_oeminfo_device:dir create_dir_perms;
+allow vendor_hisi_oeminfo_nvm_server vendor_oeminfo_device:{ file lnk_file sock_file fifo_file } create_file_perms;
+
+allow vendor_hisi_oeminfo_nvm_server socket_device:dir rw_dir_perms;
+type_transition vendor_hisi_oeminfo_nvm_server socket_device:sock_file vendor_hisecd_socket "hisecd";
+type_transition vendor_hisi_oeminfo_nvm_server socket_device:sock_file vendor_oeminfo_nvm_socket;
+allow vendor_hisi_oeminfo_nvm_server { vendor_oeminfo_nvm_socket vendor_hisecd_socket }:sock_file create_file_perms;
+
+allow vendor_hisi_oeminfo_nvm_server kmsg_device:chr_file w_file_perms;
+allow vendor_hisi_oeminfo_nvm_server proc_cmdline:file r_file_perms;
+allow vendor_hisi_oeminfo_nvm_server splashtwo_file:dir create_dir_perms;
+allow vendor_hisi_oeminfo_nvm_server splashtwo_file:file create_file_perms;
+r_dir_file(vendor_hisi_oeminfo_nvm_server, sysfs_type)
+r_dir_file(vendor_hisi_oeminfo_nvm_server, domain)
+
+# Clients communicating with oeminfo_nvm / hisecd (never include vendor_init)
+allow {
+    hal_camera_default
+    hal_audio_default
+    hal_sensors_default
+    hal_nfc_default
+    hal_fingerprint_default
+    hal_drm_default
+    vendor_hal_drm_widevine
+    vendor_hal_hisi_display_default
+    vendor_hal_hisi_antitheft_default
+    vendor_hal_hisi_hwfactoryinterface_default
+    vendor_hisi_connectivity
+    rild
+} vendor_oeminfo_nvm_socket:sock_file write;
+
+allow {
+    hal_camera_default
+    hal_audio_default
+    hal_sensors_default
+    hal_nfc_default
+    hal_fingerprint_default
+    hal_drm_default
+    vendor_hal_drm_widevine
+    vendor_hal_hisi_display_default
+    vendor_hal_hisi_antitheft_default
+    vendor_hal_hisi_hwfactoryinterface_default
+    vendor_hisi_connectivity
+    rild
+} vendor_hisi_oeminfo_nvm_server:unix_stream_socket connectto;
+
+allow {
+    hal_camera_default
+    hal_audio_default
+    hal_sensors_default
+    hal_nfc_default
+    hal_fingerprint_default
+    hal_drm_default
+    vendor_hal_drm_widevine
+    vendor_hal_hisi_display_default
+    vendor_hal_hisi_antitheft_default
+    vendor_hal_hisi_hwfactoryinterface_default
+    vendor_hisi_connectivity
+    rild
+} vendor_oeminfo_device:dir rw_dir_perms;
+
+allow {
+    hal_camera_default
+    hal_audio_default
+    hal_sensors_default
+    hal_nfc_default
+    hal_fingerprint_default
+    hal_drm_default
+    vendor_hal_drm_widevine
+    vendor_hal_hisi_display_default
+    vendor_hal_hisi_antitheft_default
+    vendor_hal_hisi_hwfactoryinterface_default
+    vendor_hisi_connectivity
+    rild
+} vendor_oeminfo_device:file create_file_perms;

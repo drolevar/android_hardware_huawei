@@ -1,0 +1,100 @@
+# TrustedCore TEE daemon (/vendor/bin/teecd, base type declared in system/sepolicy)
+typeattribute tee data_between_core_and_vendor_violators;
+
+allow tee self:global_capability_class_set {
+    chown
+    dac_override
+    dac_read_search
+    fowner
+    fsetid
+    net_raw
+    sys_admin
+    sys_rawio
+};
+allow tee self:process execmem;
+allow tee kernel:process setsched;
+
+allow tee teecd_device:chr_file { rw_file_perms map };
+allow tee vendor_teelog_device:chr_file r_file_perms;
+allow tee ion_device:chr_file r_file_perms;
+allow tee block_device:dir search;
+allow tee { vendor_teecd_blkdev vendor_rpmb_device }:blk_file rw_file_perms;
+allow tee vendor_rpmb_device:chr_file rw_file_perms;
+
+allow tee labeledfs:filesystem getattr;
+allow tee {
+    teecd_data_file
+    vendor_teecd_data_file
+    teecd_data_file_system
+    vendor_logcat_data_file
+}:dir create_dir_perms;
+allow tee {
+    teecd_data_file
+    vendor_teecd_data_file
+    teecd_data_file_system
+    vendor_logcat_data_file
+}:file create_file_perms;
+allow tee {
+    teecd_data_file
+    vendor_teecd_data_file
+    teecd_data_file_system
+}:lnk_file create_file_perms;
+
+allow tee vendor_data_file:dir create_dir_perms;
+allow tee vendor_data_file:file create_file_perms;
+allow tee vendor_data_file:lnk_file create_file_perms;
+type_transition tee vendor_data_file:{ dir file } vendor_teecd_data_file;
+
+allow tee system_data_file:dir { getattr search };
+get_prop(tee, logd_prop)
+r_dir_file(tee, domain)
+allow tee domain:process getattr;
+
+# TrustedCore client IPC (#tc_ns_socket + SCM_RIGHTS /dev/tc_ns_client fd)
+allow {
+    hal_keymaster_default
+    hal_gatekeeper_default
+    vendor_hal_hisi_libteec_default
+    vendor_hal_drm_widevine
+    vendor_hal_drm_clearkey
+    hal_drm_default
+    hal_fingerprint_default
+    hal_camera_default
+    hal_secure_element_default
+    vendor_hal_hisi_antitheft_default
+    vendor_hal_hisi_hwfactoryinterface_default
+    vendor_hal_hisi_misc_default
+    mediacodec
+} tee:unix_stream_socket connectto;
+
+allow {
+    hal_keymaster_default
+    hal_gatekeeper_default
+    vendor_hal_hisi_libteec_default
+    vendor_hal_drm_widevine
+    vendor_hal_drm_clearkey
+    hal_drm_default
+    hal_fingerprint_default
+    hal_camera_default
+    hal_secure_element_default
+    vendor_hal_hisi_antitheft_default
+    vendor_hal_hisi_hwfactoryinterface_default
+    vendor_hal_hisi_misc_default
+    mediacodec
+} tee:fd use;
+
+allow {
+    hal_keymaster_default
+    hal_gatekeeper_default
+    vendor_hal_hisi_libteec_default
+    vendor_hal_drm_widevine
+    vendor_hal_drm_clearkey
+    hal_drm_default
+    hal_fingerprint_default
+    hal_camera_default
+    hal_secure_element_default
+    vendor_hal_hisi_antitheft_default
+    vendor_hal_hisi_hwfactoryinterface_default
+    vendor_hal_hisi_misc_default
+    mediacodec
+} teecd_device:chr_file { rw_file_perms map };

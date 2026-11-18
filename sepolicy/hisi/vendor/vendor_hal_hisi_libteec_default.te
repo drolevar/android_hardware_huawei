@@ -3,3 +3,24 @@ hal_server_domain(vendor_hal_hisi_libteec_default, vendor_hal_hisi_libteec)
 
 type vendor_hal_hisi_libteec_default_exec, exec_type, vendor_file_type, file_type;
 init_daemon_domain(vendor_hal_hisi_libteec_default)
+
+typeattribute vendor_hal_hisi_libteec_default data_between_core_and_vendor_violators;
+
+allow vendor_hal_hisi_libteec_default {
+    vendor_teecd_data_file
+    teecd_data_file_system
+}:dir create_dir_perms;
+allow vendor_hal_hisi_libteec_default {
+    vendor_teecd_data_file
+    teecd_data_file_system
+}:file create_file_perms;
+allow vendor_hal_hisi_libteec_default {
+    vendor_teecd_data_file
+    teecd_data_file_system
+}:lnk_file create_file_perms;
+
+allow vendor_hal_hisi_libteec_default system_data_file:dir { getattr search };
+allow vendor_hal_hisi_libteec_default domain:process getattr;
+r_dir_file(vendor_hal_hisi_libteec_default, domain)
+
+hal_client_domain(vendor_hal_drm_widevine, vendor_hal_hisi_libteec)

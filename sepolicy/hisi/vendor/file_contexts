@@ -9,11 +9,13 @@
 
 # Connectivity
 /vendor/bin/start_connectivity_hisi             u:object_r:vendor_hisi_connectivity_exec:s0
+/vendor/bin/start_connectivity_hi1103           u:object_r:vendor_hisi_connectivity_exec:s0
 /vendor/bin/octty                               u:object_r:vendor_hisi_connectivity_exec:s0
 /vendor/bin/oam_hisi                            u:object_r:vendor_hisi_connectivity_exec:s0
 /vendor/bin/fusion_daemon                       u:object_r:vendor_hisi_connectivity_exec:s0
 /vendor/bin/gpsdaemon                           u:object_r:vendor_hisi_connectivity_exec:s0
 /vendor/bin/glgps47531                          u:object_r:vendor_hisi_connectivity_exec:s0
+/odm/bin/glgps47531                             u:object_r:vendor_hisi_connectivity_exec:s0
 /vendor/bin/glgps4774                           u:object_r:vendor_hisi_connectivity_exec:s0
 /vendor/bin/gnss_engine_hisi                    u:object_r:vendor_hisi_connectivity_exec:s0
 /vendor/bin/gnss_control_hisi                   u:object_r:vendor_hisi_connectivity_exec:s0
@@ -43,6 +45,7 @@
 
 # Health
 /vendor/bin/hw/android\.hardware\.health-service\.hisi u:object_r:hal_health_default_exec:s0
+/(vendor|system/vendor)/bin/hw/android\.hardware\.health-service\.huawei u:object_r:hal_health_default_exec:s0
 
 # HW factory interface
 /vendor/bin/hw/vendor\.huawei\.hardware\.hwfactoryinterface@1\.1-service u:object_r:vendor_hal_hisi_hwfactoryinterface_default_exec:s0
@@ -58,7 +61,10 @@
 
 # Media
 /vendor/bin/hw/vendor\.huawei\.hardware\.jpegdec@1\.0-service u:object_r:vendor_hal_hisi_media_default_exec:s0
-/vendor/bin/hw/vendor\.huawei\.hardware\.graphics\.mediacomm@2\.0-service u:object_r:vendor_hal_hisi_media_default_exec:s0
+/vendor/bin/hw/vendor\.huawei\.hardware\.graphics\.mediacomm@2\.[0-9]-service u:object_r:vendor_hal_hisi_media_default_exec:s0
+
+# NFC
+/(vendor|system/vendor)/bin/hw/android\.hardware\.nfc-service\.nxp u:object_r:hal_nfc_default_exec:s0
 
 # Otherdevices
 /vendor/bin/hw/vendor\.huawei\.hardware\.otherdevices@1\.0-service u:object_r:vendor_hal_hisi_otherdevices_default_exec:s0
@@ -98,7 +104,7 @@
 /mnvm2:0(/.*)?                                  u:object_r:modem_file:s0
 /mnt/modem/mnvm2:0(/.*)?                        u:object_r:modem_file:s0
 /mnt/modem/modem_secure(/.*)?                   u:object_r:modem_file:s0
-/mnt/hisee_fs(/.*)?                             u:object_r:hisee_file:s0
+/mnt/hisee_fs(/.*)?                             u:object_r:hisee_data_file:s0
 /splash2(/.*)?                                  u:object_r:splashtwo_file:s0
 /vendor/modem/modem_fw(/.*)?                    u:object_r:modem_vendor_file:s0
 
@@ -111,7 +117,7 @@
 /dev/tc_ns_client                               u:object_r:teecd_device:s0
 /vendor/bin/hw/vendor\.huawei\.hardware\.libteec@[0-9]\.0-service u:object_r:vendor_hal_hisi_libteec_default_exec:s0
 /vendor/bin/system_teecd                        u:object_r:vendor_hisi_teecd_exec:s0
-/vendor/bin/teecd                               u:object_r:vendor_hisi_teecd_exec:s0
+/vendor/bin/teecd                               u:object_r:tee_exec:s0
 
 # Touchscreen
 /vendor/bin/hw/vendor\.huawei\.hardware\.tp@1\.0-service u:object_r:vendor_hal_hisi_touchscreen_default_exec:s0
@@ -124,3 +130,48 @@
 # Hisi binaries (misc)
 /vendor/bin/blkcginit                           u:object_r:vendor_blkcginit_exec:s0
 /vendor/bin/water_check                         u:object_r:vendor_hisi_misc_exec:s0
+
+# Kirin 970 device nodes, sockets, vendor data & sysfs
+/dev/ion                                        u:object_r:ion_device:s0
+/dev/mali0                                      u:object_r:gpu_device:s0
+/dev/memory_latency                             u:object_r:gpu_device:s0
+/dev/memory_throughput(_up_threshold)?          u:object_r:gpu_device:s0
+/dev/0:0:0:49476                                u:object_r:vendor_rpmb_device:s0
+/dev/bsg/0:0:0:49476                            u:object_r:vendor_rpmb_device:s0
+/dev/block/mmcblk0rpmb                          u:object_r:vendor_teecd_blkdev:s0
+/dev/nve0                                       u:object_r:vendor_nve_block_device:s0
+/dev/oinv(/.*)?                                 u:object_r:vendor_oeminfo_device:s0
+/dev/socket/oeminfo_nvm                         u:object_r:vendor_oeminfo_nvm_socket:s0
+/dev/socket/hisecd                              u:object_r:vendor_hisecd_socket:s0
+/dev/hisi_teelog                                u:object_r:vendor_teelog_device:s0
+/dev/hwlog_(exception|jank|dubai|tag)           u:object_r:vendor_hwlog_device:s0
+/dev/dsm                                        u:object_r:vendor_dmd_device:s0
+/dev/(motionhub|sensorhub|ar)                   u:object_r:sensors_device:s0
+/dev/(ana_hs|ana_hs_core|deviceboxID|dig_hs_power|hi6402_hifi_misc|hifi_misc|smartpakit|soundtrigger_dma_drv|soundtrigger_socdsp_lp_pcm_drv|soundtrigger_socdsp_pcm_drv) u:object_r:audio_device:s0
+/dev/video[0-9]{1,2}                            u:object_r:camera_device:s0
+/dev/v4l-subdev.*                               u:object_r:camera_device:s0
+/dev/media[0-9]{1,2}                            u:object_r:video_device:s0
+/dev/hicam_buf.*                                u:object_r:vendor_cambuf_device:s0
+/dev/hi_vdec                                    u:object_r:vendor_vdec_device:s0
+/dev/hi_venc                                    u:object_r:vendor_venc_device:s0
+/dev/dev_jpu                                    u:object_r:vendor_jpu_device:s0
+/dev/hisi-fd                                    u:object_r:vendor_fd_device:s0
+/dev/ipu                                        u:object_r:vendor_ipu_device:s0
+/dev/(dev-ivp|ivp-ipc)                          u:object_r:vendor_ivp_device:s0
+/dev/fingerprint(hub|hub_ud)?                   u:object_r:vendor_fingerprint_device:s0
+/dev/haptics                                    u:object_r:vendor_haptic_device:s0
+/dev/ttyAMA0                                    u:object_r:vendor_irda_device:s0
+/dev/ttyAMA4                                    u:object_r:hci_attach_dev:s0
+/dev/ttyAMA5                                    u:object_r:vendor_gps_device:s0
+/dev/appvcom.*                                  u:object_r:radio_device:s0
+/dev/ttySPI.*                                   u:object_r:radio_device:s0
+/dev/(hisi_perf_ctrl|acpuddr_link_governor_level|iaware_qos_ctrl) u:object_r:vendor_perf_ctrl_device:s0
+/dev/(pn544|cxd224x-i2c)                        u:object_r:nfc_device:s0
+/data/vendor/log(/.*)?                          u:object_r:vendor_logcat_data_file:s0
+/data/vendor/nfc(/.*)?                          u:object_r:vendor_nfc_data_file:s0
+/data/vendor/mediadrm(/.*)?                     u:object_r:vendor_mediadrm_data_file:s0
+/data/vendor/hwcdump(/.*)?                      u:object_r:vendor_hwcdump_data_file:s0
+/sys/devices/platform/0\.hisee(/.*)?            u:object_r:sysfs_hisee:s0
+/sys/class/graphics/fb[0-9](/.*)?               u:object_r:sysfs_framebuffer:s0
+/sys/devices/platform/e8600000\.dpe(/.*)?       u:object_r:sysfs_framebuffer:s0
+/sys/touchscreen(/.*)?                          u:object_r:sysfs_touchscreen:s0

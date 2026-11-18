@@ -1,7 +1,7 @@
-# Mount points
+# Mount points (writable labeledfs ext4 vs read-only contextmount ext4)
 type modem_file, file_type;
-type modem_vendor_file, file_type, vendor_file_type;
-type hisee_file, file_type;
+type modem_vendor_file, file_type, contextmount_type, vendor_file_type;
+type hisee_data_file, fs_type, contextmount_type;
 type splashtwo_file, file_type;
 
 # TEE
@@ -9,3 +9,19 @@ type teecd_data_file, file_type, data_file_type;
 # BLA .225 stock policy keeps legacy core-data paths distinct from /sec_storage.
 type teecd_data_file_system, file_type, data_file_type, core_data_file_type;
 type vendor_teecd_data_file, file_type, data_file_type;
+
+# Vendor sockets
+type vendor_oeminfo_nvm_socket, file_type;
+type vendor_hisecd_socket, file_type;
+
+# Vendor data directories (/data/vendor/*)
+type vendor_nfc_data_file, file_type, data_file_type;
+type vendor_mediadrm_data_file, file_type, data_file_type;
+type vendor_logcat_data_file, file_type, data_file_type;
+type vendor_hwcdump_data_file, file_type, data_file_type;
+
+# Kirin sysfs nodes
+type sysfs_hisee, fs_type, sysfs_type, mlstrustedobject;
+type sysfs_pg, fs_type, sysfs_type, mlstrustedobject;
+type sysfs_framebuffer, fs_type, sysfs_type, mlstrustedobject;
+type sysfs_touchscreen, fs_type, sysfs_type, mlstrustedobject;

@@ -1,2 +1,32 @@
-# TEE
-type teecd_device, dev_type;
+# TEE & RPMB
+type teecd_device, dev_type, mlstrustedobject;
+type vendor_teelog_device, dev_type;
+type vendor_teecd_blkdev, dev_type;
+type vendor_rpmb_device, dev_type;
+
+# OEMINFO, NVE, HISEE, BFM & Kirin UFS partitions
+type vendor_oeminfo_nvm_device, dev_type;
+type vendor_oeminfo_device, dev_type;
+type vendor_nve_block_device, dev_type;
+type vendor_certification_device, dev_type;
+type vendor_hisee_blkdev, dev_type;
+type vendor_splash2_block_device, dev_type;
+type vendor_bfm_block_device, dev_type;
+type vendor_modem_block_device, dev_type;
+type vendor_ufs_block_device, dev_type;
+
+# Logging, sensors, haptics, IR, GPS, camera/codec & perf
+type vendor_hwlog_device, dev_type, mlstrustedobject;
+type vendor_dmd_device, dev_type;
+type vendor_haptic_device, dev_type;
+type vendor_irda_device, dev_type;
+type vendor_gps_device, dev_type;
+type vendor_cambuf_device, dev_type;
+type vendor_vdec_device, dev_type;
+type vendor_venc_device, dev_type;
+type vendor_jpu_device, dev_type, mlstrustedobject;
+type vendor_fd_device, dev_type;
+type vendor_ipu_device, dev_type;
+type vendor_ivp_device, dev_type;
+type vendor_fingerprint_device, dev_type;
+type vendor_perf_ctrl_device, dev_type;
