@@ -138,6 +138,22 @@ class Phase6BSepolicyTests(unittest.TestCase):
         self.assertIn("data_between_core_and_vendor_violators", tee_te)
         self.assertNotIn("vendor_init", tee_te)
 
+    def test_libteec_domain_and_xcollie_property_contexts(self):
+        libteec_te = re.sub(r"#.*", "", (VENDOR / "vendor_hal_hisi_libteec_default.te").read_text())
+        self.assertIn("type hal_libteec_default, domain;", libteec_te)
+        self.assertIn("typealias hal_libteec_default alias vendor_hal_hisi_libteec_default;", libteec_te)
+        self.assertIn("type hal_libteec_default_exec, exec_type, vendor_file_type, file_type;", libteec_te)
+        self.assertIn("typealias hal_libteec_default_exec alias vendor_hal_hisi_libteec_default_exec;", libteec_te)
+        self.assertIn("hal_client_domain(hal_drm_default, vendor_hal_hisi_libteec)", libteec_te)
+
+        prop_te = (VENDOR / "property.te").read_text()
+        self.assertIn("vendor_internal_prop(vendor_xcollie_prop)", prop_te)
+        prop_ctx = (VENDOR / "property_contexts").read_text().splitlines()
+        self.assertTrue(any(line.split() == ["odm.xcollie.", "u:object_r:vendor_xcollie_prop:s0"] for line in prop_ctx if line.strip()))
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        self.assertIn("vendor_xcollie_prop", clients_te)
+        self.assertIn("get_prop(hal_gatekeeper_default, logd_prop)", clients_te)
+
 
 if __name__ == "__main__":
     unittest.main()
