@@ -14,3 +14,7 @@ allow init {
 }:filesystem { mount remount unmount getattr relabelfrom relabelto };
 
 allow modem_vendor_file self:filesystem associate;
+
+# Early block symlink relabeling and ueventd symlink inspection for oeminfo
+allow init vendor_oeminfo_nvm_device:{ blk_file lnk_file } relabelto;
+allow ueventd vendor_oeminfo_nvm_device:lnk_file { read getattr };

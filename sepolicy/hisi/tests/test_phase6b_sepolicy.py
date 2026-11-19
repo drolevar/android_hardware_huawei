@@ -161,6 +161,27 @@ class Phase6BSepolicyTests(unittest.TestCase):
         self.assertIn("vendor_xcollie_prop", clients_te)
         self.assertIn("get_prop(hal_gatekeeper_default, logd_prop)", clients_te)
 
+    def test_attempt5_nfc_service_context_oeminfo_and_usb_rules(self):
+        svc_ctx = [
+            line.split()
+            for line in (VENDOR / "service_contexts").read_text().splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        self.assertIn(
+            ["vendor.nxp.nxpnfc_aidl.INxpNfc/default", "u:object_r:hal_nfc_service:s0"],
+            svc_ctx,
+        )
+
+        init_te = re.sub(r"#.*", "", (VENDOR / "init.te").read_text())
+        self.assertIn("allow init vendor_oeminfo_nvm_device:{ blk_file lnk_file } relabelto;", init_te)
+        self.assertIn("allow ueventd vendor_oeminfo_nvm_device:lnk_file { read getattr };", init_te)
+
+        vinit_te = re.sub(r"#.*", "", (VENDOR / "vendor_init.te").read_text())
+        self.assertIn("allow vendor_init vendor_oeminfo_nvm_device:lnk_file { read getattr };", vinit_te)
+        self.assertIn("allow vendor_init vendor_nve_block_device:chr_file getattr;", vinit_te)
+        self.assertIn("r_dir_file(vendor_init, sysfs_android_usb)", vinit_te)
+        self.assertIn("allow vendor_init sysfs_android_usb:file { w_file_perms setattr };", vinit_te)
+
 
 if __name__ == "__main__":
     unittest.main()
