@@ -1,4 +1,4 @@
-# Kirin 970 kernel threads (rpmb_ready_task, hiseeprint_mntn, kdevtmpfs, hisi_nve)
+# Kirin 970 kernel threads (rpmb_ready_task, hiseeprint_mntn, kdevtmpfs, hisi_nve, pwronisp)
 allow kernel self:global_capability_class_set { chown sys_admin };
 allow kernel block_device:dir rw_dir_perms;
 allow kernel device:dir create_dir_perms;
@@ -14,6 +14,7 @@ allow kernel {
     vendor_modem_block_device
     vendor_splash2_block_device
 }:blk_file rw_file_perms;
+allow kernel vendor_fw_block_device:blk_file r_file_perms;
 
 r_dir_file(kernel, hisee_data_file)
 r_dir_file(kernel, modem_vendor_file)

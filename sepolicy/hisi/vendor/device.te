@@ -13,6 +13,7 @@ type vendor_hisee_blkdev, dev_type;
 type vendor_splash2_block_device, dev_type;
 type vendor_bfm_block_device, dev_type;
 type vendor_modem_block_device, dev_type;
+type vendor_fw_block_device, dev_type;
 type vendor_ufs_block_device, dev_type;
 
 # Logging, sensors, haptics, IR, GPS, camera/codec & perf

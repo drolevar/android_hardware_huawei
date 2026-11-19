@@ -475,6 +475,10 @@ class Phase6BSepolicyTests(unittest.TestCase):
         self.assertIn("allow vendor_hisi_connectivity self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;", conn_te)
         self.assertIn("dontaudit vendor_hisi_connectivity shell_data_file:dir search;", conn_te)
 
+        self.assertIn("dev_type", decls["vendor_fw_block_device"])
+        kernel_te = re.sub(r"#.*", "", (VENDOR / "kernel.te").read_text())
+        self.assertIn("allow kernel vendor_fw_block_device:blk_file r_file_perms;", kernel_te)
+
 
 if __name__ == "__main__":
     unittest.main()
