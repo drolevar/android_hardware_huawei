@@ -136,7 +136,8 @@ allow hal_secure_element_default { nfc_device radio_device }:chr_file rw_file_pe
 get_prop(hal_secure_element_default, vendor_rild_prop)
 
 # Thermal HAL
-r_dir_file(hal_thermal_default, { sysfs_thermal sysfs_pg })
+r_dir_file(hal_thermal_default, { sysfs_thermal sysfs_pg sysfs_devices_system_cpu })
+allow hal_thermal_default proc_stat:file r_file_perms;
 allow hal_thermal_default sysfs:dir r_dir_perms;
 
 # IR & Vibrator

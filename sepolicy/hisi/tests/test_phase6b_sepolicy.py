@@ -486,6 +486,9 @@ class Phase6BSepolicyTests(unittest.TestCase):
 
         rules = load_file_contexts()
         self.assertEqual(resolve_type(rules, "/odm/etc/ncfg/COMMON.bin"), "modem_vendor_file")
+        self.assertEqual(resolve_type(rules, "/odm/hw_odm/BLA-L29/ncfg"), "modem_vendor_file")
+        self.assertEqual(resolve_type(rules, "/odm/hw_odm/BLA-L29/ncfg/COMMON.bin"), "modem_vendor_file")
+        self.assertEqual(resolve_type(rules, "/odm/hw_odm/BLA-L09/ncfg/COMMON.bin"), "modem_vendor_file")
 
         genfs_txt = (VENDOR / "genfs_contexts").read_text()
         for needle in (
@@ -512,7 +515,8 @@ class Phase6BSepolicyTests(unittest.TestCase):
             "hal_client_domain(hal_nfc_default, hal_secure_element)",
             "allow hal_secure_element_default { nfc_device radio_device }:chr_file rw_file_perms;",
             "get_prop(hal_secure_element_default, vendor_rild_prop)",
-            "r_dir_file(hal_thermal_default, { sysfs_thermal sysfs_pg })",
+            "r_dir_file(hal_thermal_default, { sysfs_thermal sysfs_pg sysfs_devices_system_cpu })",
+            "allow hal_thermal_default proc_stat:file r_file_perms;",
             "allow hal_thermal_default sysfs:dir r_dir_perms;",
             "allow { hal_camera_default vendor_hal_hisi_hwfactoryinterface_default } sysfs_hisi_boardname:file r_file_perms;",
             "allow hal_camera_default { proc_hisi_ddr_info proc_meminfo }:file r_file_perms;",
