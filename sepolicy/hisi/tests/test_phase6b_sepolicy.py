@@ -263,6 +263,93 @@ class Phase6BSepolicyTests(unittest.TestCase):
         ):
             self.assertIn(needle, clients_te)
 
+    def test_attempt8_leds_sensors_camera_ril_bt_vibrator_gps_power_drm(self):
+        decls = load_type_declarations()
+        for data_type in ("vendor_camera_data_file", "vendor_gps_data_file"):
+            self.assertIn("data_file_type", decls[data_type])
+        for fs_type in ("sysfs_huawei_sensor", "sysfs_camerafs", "proc_gps", "proc_gpu_memory", "proc_wakeup_sources"):
+            self.assertIn("fs_type", decls[fs_type])
+
+        rules = load_file_contexts()
+        self.assertEqual(
+            resolve_type(rules, "/vendor/bin/hw/vendor.huawei.hardware.camera.factory@1.1-service"),
+            "hal_camera_default_exec",
+        )
+        self.assertEqual(
+            resolve_type(rules, "/vendor/bin/hw/android.hardware.vibrator-service.huawei"),
+            "hal_vibrator_default_exec",
+        )
+        self.assertEqual(resolve_type(rules, "/dev/ttyAMA3"), "vendor_gps_device")
+        self.assertEqual(resolve_type(rules, "/dev/gpstty"), "vendor_gps_device")
+        self.assertEqual(resolve_type(rules, "/data/vendor/camera/img/test.jpg"), "vendor_camera_data_file")
+        self.assertEqual(resolve_type(rules, "/data/vendor/gps/gpsconfig.xml"), "vendor_gps_data_file")
+        self.assertEqual(resolve_type(rules, "/data/vendor/gnss/lhd.conf"), "vendor_gps_data_file")
+
+        genfs_txt = (VENDOR / "genfs_contexts").read_text()
+        for needle in (
+            "genfscon sysfs /devices/platform/hisi_fb.1048577/leds u:object_r:sysfs_leds:s0",
+            "genfscon sysfs /devices/platform/hisilicon-hisi-led-pmic-spmi-pmic_led/leds u:object_r:sysfs_leds:s0",
+            "genfscon sysfs /devices/platform/amba/fdf0d000.i2c/i2c-4/4-005a/leds u:object_r:sysfs_leds:s0",
+            "genfscon sysfs /devices/platform/huawei_sensor u:object_r:sysfs_huawei_sensor:s0",
+            "genfscon sysfs /devices/virtual/sensors u:object_r:sysfs_huawei_sensor:s0",
+            "genfscon sysfs /class/sensors u:object_r:sysfs_huawei_sensor:s0",
+            "genfscon sysfs /devices/virtual/camerafs u:object_r:sysfs_camerafs:s0",
+            "genfscon sysfs /class/camerafs u:object_r:sysfs_camerafs:s0",
+            "genfscon proc /bluetooth/calibrate u:object_r:proc_bluetooth_writable:s0",
+            "genfscon proc /gps u:object_r:proc_gps:s0",
+            "genfscon proc /wakeup_sources u:object_r:proc_wakeup_sources:s0",
+            "genfscon proc /gpu_memory u:object_r:proc_gpu_memory:s0",
+            "genfscon proc /memtrack u:object_r:proc_gpu_memory:s0",
+            "genfscon sysfs /devices/platform/battery/power_supply u:object_r:sysfs_batteryinfo:s0",
+        ):
+            self.assertIn(needle, genfs_txt)
+
+        hw_ctx = (POLICY / "private/hwservice_contexts").read_text()
+        for iface in (
+            "vendor.huawei.hardware.camera.camResource::IHwCameraResourceService",
+            "vendor.huawei.hardware.camera.factory::ICameraFactory",
+            "vendor.huawei.hardware.camera.vircamera::IVirCameraChannel",
+            "vendor.huawei.hardware.hisiradio::IHisiRadio",
+            "vendor.huawei.hardware.radio.chr::IRadioChr",
+            "vendor.huawei.hardware.radio.deprecated::IOemHook",
+            "vendor.huawei.hardware.radio.ims::IRadioIms",
+        ):
+            self.assertIn(iface, hw_ctx)
+
+        prop_te = (VENDOR / "property.te").read_text()
+        for prop_type in (
+            "vendor_power_prop",
+            "vendor_camera_prop",
+            "vendor_gps_prop",
+            "vendor_ctl_gpsd_prop",
+            "vendor_rild_prop",
+        ):
+            self.assertIn(f"vendor_internal_prop({prop_type})", prop_te)
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        for needle in (
+            "r_dir_file(hal_sensors_default, sysfs_huawei_sensor)",
+            "hal_client_domain(hal_camera_default, hal_sensors)",
+            "hal_client_domain(hal_camera_default, hal_graphics_allocator)",
+            "hal_client_domain(hal_camera_default, hal_memtrack)",
+            "allow hal_bluetooth_default proc_bluetooth_writable:dir r_dir_perms;",
+            "set_prop(hal_power_default, vendor_power_prop)",
+            "allow hal_memtrack_default proc_gpu_memory:file r_file_perms;",
+            "r_dir_file(hal_audio_default, sysfs_batteryinfo)",
+        ):
+            self.assertIn(needle, clients_te)
+
+        widevine_te = re.sub(r"#.*", "", (VENDOR / "vendor_hal_drm_widevine.te").read_text())
+        self.assertIn("allow vendor_hal_drm_widevine vendor_mediadrm_data_file:file create_file_perms;", widevine_te)
+
+        conn_te = re.sub(r"#.*", "", (VENDOR / "vendor_hisi_connectivity.te").read_text())
+        self.assertIn("set_prop(vendor_hisi_connectivity, vendor_ctl_gpsd_prop)", conn_te)
+        self.assertIn("allow vendor_hisi_connectivity fwk_sensor_hwservice:hwservice_manager find;", conn_te)
+
+        rild_te = re.sub(r"#.*", "", (VENDOR / "rild.te").read_text())
+        self.assertIn("set_prop(rild, vendor_rild_prop)", rild_te)
+        self.assertIn("allow rild vendor_modem_block_device:blk_file r_file_perms;", rild_te)
+
 
 if __name__ == "__main__":
     unittest.main()

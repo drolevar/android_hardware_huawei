@@ -1,0 +1,31 @@
+//
+// SPDX-FileCopyrightText: The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+cc_binary {
+    name: "android.hardware.vibrator-service.huawei",
+    relative_install_path: "hw",
+    init_rc: ["android.hardware.vibrator-service.huawei.rc"],
+    vintf_fragments: ["android.hardware.vibrator-service.huawei.xml"],
+    vendor: true,
+    shared_libs: [
+        "libbase",
+        "libbinder_ndk",
+        "liblog",
+        "android.hardware.vibrator-V1-ndk",
+    ],
+    srcs: [
+        "Vibrator.cpp",
+        "main.cpp",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

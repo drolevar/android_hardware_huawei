@@ -6,6 +6,7 @@
 
 # Camera
 /vendor/bin/CameraDaemon u:object_r:hal_camera_default_exec:s0
+/vendor/bin/hw/vendor\.huawei\.hardware\.camera\.factory@1\.[01]-service u:object_r:hal_camera_default_exec:s0
 
 # Connectivity
 /vendor/bin/start_connectivity_hisi             u:object_r:vendor_hisi_connectivity_exec:s0
@@ -123,6 +124,9 @@
 /vendor/bin/hw/vendor\.huawei\.hardware\.tp@1\.0-service u:object_r:vendor_hal_hisi_touchscreen_default_exec:s0
 /vendor/bin/aptouch_daemon                      u:object_r:vendor_hisi_touchscreen_exec:s0
 
+# Vibrator
+/vendor/bin/hw/android\.hardware\.vibrator-service\.huawei u:object_r:hal_vibrator_default_exec:s0
+
 # Hisi hals (misc)
 /vendor/bin/hw/vendor\.huawei\.hardware\.hivrar@1\.0-service u:object_r:vendor_hal_hisi_misc_default_exec:s0
 /vendor/bin/hw/vendor\.huawei\.hardware\.huaweisigntool@1\.0-service u:object_r:vendor_hal_hisi_misc_default_exec:s0
@@ -162,11 +166,16 @@
 /dev/haptics                                    u:object_r:vendor_haptic_device:s0
 /dev/ttyAMA0                                    u:object_r:vendor_irda_device:s0
 /dev/ttyAMA4                                    u:object_r:hci_attach_dev:s0
+/dev/ttyAMA3                                    u:object_r:vendor_gps_device:s0
 /dev/ttyAMA5                                    u:object_r:vendor_gps_device:s0
+/dev/gpstty                                     u:object_r:vendor_gps_device:s0
 /dev/appvcom.*                                  u:object_r:radio_device:s0
 /dev/ttySPI.*                                   u:object_r:radio_device:s0
 /dev/(hisi_perf_ctrl|acpuddr_link_governor_level|iaware_qos_ctrl) u:object_r:vendor_perf_ctrl_device:s0
 /dev/(pn544|cxd224x-i2c)                        u:object_r:nfc_device:s0
+/data/vendor/camera(/.*)?                       u:object_r:vendor_camera_data_file:s0
+/data/vendor/gps(/.*)?                          u:object_r:vendor_gps_data_file:s0
+/data/vendor/gnss(/.*)?                         u:object_r:vendor_gps_data_file:s0
 /data/vendor/log(/.*)?                          u:object_r:vendor_logcat_data_file:s0
 /data/vendor/nfc(/.*)?                          u:object_r:vendor_nfc_data_file:s0
 /data/vendor/mediadrm(/.*)?                     u:object_r:vendor_mediadrm_data_file:s0

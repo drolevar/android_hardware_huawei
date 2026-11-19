@@ -21,10 +21,17 @@ type vendor_logcat_data_file, file_type, data_file_type;
 type vendor_hwcdump_data_file, file_type, data_file_type;
 type vendor_bluedroid_data_file, file_type, data_file_type;
 type vendor_wlan_data_file, file_type, data_file_type;
+type vendor_camera_data_file, file_type, data_file_type;
+type vendor_gps_data_file, file_type, data_file_type;
 
-# Kirin sysfs nodes
+# Kirin sysfs & procfs nodes
 type sysfs_hisee, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_pg, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_framebuffer, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_touchscreen, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_audio_hw_config, fs_type, sysfs_type, mlstrustedobject;
+type sysfs_huawei_sensor, fs_type, sysfs_type, mlstrustedobject;
+type sysfs_camerafs, fs_type, sysfs_type, mlstrustedobject;
+type proc_gps, fs_type, proc_type;
+type proc_gpu_memory, fs_type, proc_type;
+type proc_wakeup_sources, fs_type, proc_type;

@@ -6,6 +6,7 @@
 cc_library_static {
     name: "libinit_hisi",
     srcs: [
+        "libinit_connectivity.cpp",
         "libinit_dalvik.cpp",
         "libinit_utils.cpp",
         "libinit_variants.cpp",

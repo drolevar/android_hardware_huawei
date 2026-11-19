@@ -66,6 +66,9 @@ hal_client_domain(hal_graphics_composer_default, vendor_hal_hisi_perf)
 hal_client_domain(mediacodec, vendor_hal_hisi_display)
 hal_client_domain(hal_camera_default, vendor_hal_hisi_display)
 hal_client_domain(hal_camera_default, vendor_hal_hisi_perf)
+hal_client_domain(hal_camera_default, hal_sensors)
+hal_client_domain(hal_camera_default, hal_graphics_allocator)
+hal_client_domain(hal_camera_default, hal_memtrack)
 
 allow {
     hal_graphics_composer_default
@@ -127,7 +130,9 @@ allow hal_vibrator_default vendor_haptic_device:chr_file rw_file_perms;
 r_dir_file(hal_vibrator_default, sysfs_type)
 allow hal_vibrator_default { sysfs sysfs_vibrator sysfs_leds }:file rw_file_perms;
 
-# Power & Perf HALs
+# Power, Perf & Memtrack HALs
+set_prop(hal_power_default, vendor_power_prop)
+allow hal_memtrack_default proc_gpu_memory:file r_file_perms;
 allow { hal_power_default vendor_hal_hisi_perf_default } vendor_perf_ctrl_device:chr_file rw_file_perms;
 r_dir_file({ hal_power_default vendor_hal_hisi_perf_default }, sysfs_type)
 allow { hal_power_default vendor_hal_hisi_perf_default } {
@@ -142,10 +147,13 @@ allow { hal_power_default vendor_hal_hisi_perf_default } {
 }:file rw_file_perms;
 
 # Camera HAL (CameraDaemon)
+vndbinder_use(hal_camera_default)
 allow hal_camera_default self:process execmem;
+allow hal_camera_default self:global_capability_class_set sys_nice;
 allow hal_camera_default graphics_device:dir search;
 allow hal_camera_default {
     graphics_device
+    gpu_device
     vendor_cambuf_device
     vendor_fd_device
     vendor_ipu_device
@@ -157,9 +165,14 @@ allow hal_camera_default {
     vendor_hwlog_device
 }:chr_file { getattr open write };
 allow hal_camera_default { cameraserver system_server hal_graphics_composer_default }:fd use;
-r_dir_file(hal_camera_default, sysfs_pg)
+allow hal_camera_default vendor_data_file:dir search;
+allow hal_camera_default { vendor_camera_data_file vendor_logcat_data_file }:dir create_dir_perms;
+allow hal_camera_default { vendor_camera_data_file vendor_logcat_data_file }:file create_file_perms;
+r_dir_file(hal_camera_default, { sysfs_pg sysfs_camerafs sysfs_huawei_sensor sysfs_leds })
 allow hal_camera_default sysfs_pg:file w_file_perms;
+allow hal_camera_default { sysfs_camerafs sysfs_leds }:file rw_file_perms;
 get_prop(hal_camera_default, logd_prop)
+set_prop(hal_camera_default, vendor_camera_prop)
 
 # Sensors HAL (sensorhub)
 allow hal_sensors_default sensors_device:chr_file rw_file_perms;
@@ -167,10 +180,13 @@ allow hal_sensors_default input_device:dir r_dir_perms;
 allow hal_sensors_default input_device:chr_file r_file_perms;
 allow hal_sensors_default vendor_logcat_data_file:dir create_dir_perms;
 allow hal_sensors_default vendor_logcat_data_file:file create_file_perms;
+r_dir_file(hal_sensors_default, sysfs_huawei_sensor)
+allow hal_sensors_default sysfs_huawei_sensor:file rw_file_perms;
 
 # Audio HAL
 r_dir_file(hal_audio_default, sysfs_audio_hw_config)
 r_dir_file(hal_audio_default, sysfs_framebuffer)
+r_dir_file(hal_audio_default, sysfs_batteryinfo)
 allow hal_audio_default self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
 allow hal_audio_default vendor_logcat_data_file:dir create_dir_perms;
 allow hal_audio_default vendor_logcat_data_file:file create_file_perms;
@@ -178,8 +194,23 @@ dontaudit hal_audio_default { default_prop config_prop }:file r_file_perms;
 
 # Bluetooth & Wi-Fi NVE MAC files
 r_dir_file(hal_bluetooth_default, vendor_bluedroid_data_file)
+allow hal_bluetooth_default proc_bluetooth_writable:dir r_dir_perms;
+dontaudit hal_bluetooth_default shell_data_file:dir search;
 r_dir_file(hal_wifi_default, vendor_wlan_data_file)
 allow { hal_wifi_supplicant_default hal_wifi_hostapd_default } vendor_wlan_data_file:dir search;
+
+# GNSS HAL & companion daemon binder/data channels
+allow hal_gnss_default vendor_gps_device:chr_file rw_file_perms;
+allow hal_gnss_default vendor_data_file:dir search;
+allow hal_gnss_default { vendor_gps_data_file vendor_logcat_data_file }:dir create_dir_perms;
+allow hal_gnss_default vendor_gps_data_file:{ file fifo_file sock_file } create_file_perms;
+allow hal_gnss_default vendor_logcat_data_file:file create_file_perms;
+r_dir_file(hal_gnss_default, proc_gps)
+allow hal_gnss_default proc_gps:file rw_file_perms;
+allow hal_gnss_default proc_wakeup_sources:file r_file_perms;
+set_prop(hal_gnss_default, vendor_gps_prop)
+binder_call(hal_gnss_default, vendor_hisi_connectivity)
+binder_call(vendor_hisi_connectivity, hal_gnss_default)
 
 # Fingerprint HAL
 allow hal_fingerprint_default vendor_fingerprint_device:chr_file rw_file_perms;

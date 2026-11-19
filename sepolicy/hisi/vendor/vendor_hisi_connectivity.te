@@ -2,3 +2,38 @@ type vendor_hisi_connectivity, domain;
 type vendor_hisi_connectivity_exec, exec_type, vendor_file_type, file_type;
 
 init_daemon_domain(vendor_hisi_connectivity)
+
+hwbinder_use(vendor_hisi_connectivity)
+vndbinder_use(vendor_hisi_connectivity)
+net_domain(vendor_hisi_connectivity)
+wakelock_use(vendor_hisi_connectivity)
+
+hal_client_domain(vendor_hisi_connectivity, hal_sensors)
+allow vendor_hisi_connectivity fwk_sensor_hwservice:hwservice_manager find;
+binder_call(vendor_hisi_connectivity, sensor_service_server)
+binder_call(sensor_service_server, vendor_hisi_connectivity)
+
+set_prop(vendor_hisi_connectivity, vendor_ctl_gpsd_prop)
+set_prop(vendor_hisi_connectivity, vendor_gps_prop)
+set_prop(vendor_hisi_connectivity, vendor_xcollie_prop)
+
+allow vendor_hisi_connectivity self:global_capability_class_set {
+    chown
+    fowner
+    fsetid
+    net_admin
+};
+
+allow vendor_hisi_connectivity vendor_data_file:dir search;
+allow vendor_hisi_connectivity { vendor_gps_data_file vendor_logcat_data_file }:dir create_dir_perms;
+allow vendor_hisi_connectivity vendor_gps_data_file:{ file fifo_file sock_file } create_file_perms;
+allow vendor_hisi_connectivity vendor_logcat_data_file:file create_file_perms;
+
+allow vendor_hisi_connectivity { vendor_gps_device radio_device }:chr_file rw_file_perms;
+allow vendor_hisi_connectivity { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };
+
+r_dir_file(vendor_hisi_connectivity, { proc_gps sysfs_type })
+allow vendor_hisi_connectivity proc_gps:file rw_file_perms;
+allow vendor_hisi_connectivity proc_wakeup_sources:file r_file_perms;
+
+allow vendor_hisi_connectivity { vendor_shell_exec vendor_toolbox_exec }:file rx_file_perms;

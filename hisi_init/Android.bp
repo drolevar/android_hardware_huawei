@@ -8,7 +8,6 @@ cc_binary {
     init_rc: ["hisi_init.rc"],
     srcs: [
         "hisi_utils.cpp",
-        "hisi_connectivity.cpp",
         "hisi_init.cpp",
         "hisi_nve.cpp"
     ],

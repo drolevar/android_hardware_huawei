@@ -1,0 +1,16 @@
+# Balong RIL daemon extensions grounded in .225 policy
+vndbinder_use(rild)
+
+set_prop(rild, vendor_rild_prop)
+set_prop(rild, vendor_xcollie_prop)
+
+allow rild self:process execmem;
+allow rild block_device:dir search;
+allow rild vendor_modem_block_device:blk_file r_file_perms;
+r_dir_file(rild, modem_vendor_file)
+
+allow rild vendor_data_file:dir search;
+allow rild { modem_file splashtwo_file vendor_logcat_data_file }:dir create_dir_perms;
+allow rild { modem_file splashtwo_file vendor_logcat_data_file }:file create_file_perms;
+
+allow rild { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };

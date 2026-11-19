@@ -16,3 +16,23 @@ genfscon sysfs /class/devfreq u:object_r:sysfs_devfreq_dir:s0
 # Kirin 970 Bluetooth rfkill & bluesleep procfs nodes
 genfscon sysfs /devices/platform/bluetooth_power/rfkill/rfkill0 u:object_r:sysfs_bluetooth_writable:s0
 genfscon proc /bluetooth/sleep u:object_r:proc_bluetooth_writable:s0
+genfscon proc /bluetooth/calibrate u:object_r:proc_bluetooth_writable:s0
+
+# Kirin 970 display backlight & RGB notification LEDs
+genfscon sysfs /devices/platform/hisi_fb.1048577/leds u:object_r:sysfs_leds:s0
+genfscon sysfs /devices/platform/hisilicon-hisi-led-pmic-spmi-pmic_led/leds u:object_r:sysfs_leds:s0
+genfscon sysfs /devices/platform/amba/fdf0d000.i2c/i2c-4/4-005a/leds u:object_r:sysfs_leds:s0
+
+# Kirin 970 sensorhub & camera sysfs nodes
+genfscon sysfs /devices/platform/huawei_sensor u:object_r:sysfs_huawei_sensor:s0
+genfscon sysfs /devices/virtual/sensors u:object_r:sysfs_huawei_sensor:s0
+genfscon sysfs /class/sensors u:object_r:sysfs_huawei_sensor:s0
+genfscon sysfs /devices/virtual/camerafs u:object_r:sysfs_camerafs:s0
+genfscon sysfs /class/camerafs u:object_r:sysfs_camerafs:s0
+
+# Kirin 970 GNSS, wakeup_sources, GPU memtrack & battery info nodes
+genfscon proc /gps u:object_r:proc_gps:s0
+genfscon proc /wakeup_sources u:object_r:proc_wakeup_sources:s0
+genfscon proc /gpu_memory u:object_r:proc_gpu_memory:s0
+genfscon proc /memtrack u:object_r:proc_gpu_memory:s0
+genfscon sysfs /devices/platform/battery/power_supply u:object_r:sysfs_batteryinfo:s0

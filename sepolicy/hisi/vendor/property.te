@@ -1,2 +1,7 @@
 vendor_internal_prop(vendor_xcollie_prop)
 vendor_internal_prop(vendor_hisi_conn_prop)
+vendor_internal_prop(vendor_power_prop)
+vendor_internal_prop(vendor_camera_prop)
+vendor_internal_prop(vendor_gps_prop)
+vendor_internal_prop(vendor_ctl_gpsd_prop)
+vendor_internal_prop(vendor_rild_prop)
