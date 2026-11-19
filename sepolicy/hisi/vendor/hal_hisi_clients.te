@@ -66,9 +66,14 @@ hal_client_domain(hal_graphics_composer_default, vendor_hal_hisi_perf)
 hal_client_domain(mediacodec, vendor_hal_hisi_display)
 hal_client_domain(hal_camera_default, vendor_hal_hisi_display)
 hal_client_domain(hal_camera_default, vendor_hal_hisi_perf)
+hal_client_domain(hal_camera_default, vendor_hal_hisi_libteec)
+hal_client_domain(hal_camera_default, vendor_hal_hisi_hwfactoryinterface)
+hal_client_domain(hal_camera_default, hal_camera)
 hal_client_domain(hal_camera_default, hal_sensors)
 hal_client_domain(hal_camera_default, hal_graphics_allocator)
 hal_client_domain(hal_camera_default, hal_memtrack)
+binder_call(hal_camera_default, system_server)
+binder_call(system_server, hal_camera_default)
 
 allow {
     hal_graphics_composer_default
@@ -96,6 +101,9 @@ allow { hal_graphics_composer_default vendor_hal_hisi_display_default } {
     vendor_hwcdump_data_file
     vendor_logcat_data_file
 }:file create_file_perms;
+get_prop(hal_graphics_composer_default, vendor_display_prop)
+set_prop(vendor_hal_hisi_display_default, vendor_display_prop)
+get_prop({ hal_graphics_composer_default hal_graphics_allocator_default }, vendor_camera_prop)
 
 # Health HAL & offline charger
 r_dir_file({ hal_health_default charger_vendor }, sysfs_type)
@@ -120,6 +128,7 @@ allow hal_nfc_default { sysfs_nfc_power_writable sysfs_hisee }:file rw_file_perm
 allow hal_secure_element_default sysfs_hisee:dir r_dir_perms;
 allow hal_secure_element_default sysfs_hisee:file rw_file_perms;
 r_dir_file(hal_secure_element_default, hisee_data_file)
+r_dir_file(hal_secure_element_default, sysfs_nfc_power_writable)
 
 # IR & Vibrator
 allow hal_ir_default vendor_irda_device:chr_file rw_file_perms;
@@ -168,10 +177,11 @@ allow hal_camera_default { cameraserver system_server hal_graphics_composer_defa
 allow hal_camera_default vendor_data_file:dir search;
 allow hal_camera_default { vendor_camera_data_file vendor_logcat_data_file }:dir create_dir_perms;
 allow hal_camera_default { vendor_camera_data_file vendor_logcat_data_file }:file create_file_perms;
-r_dir_file(hal_camera_default, { sysfs_pg sysfs_camerafs sysfs_huawei_sensor sysfs_leds })
+r_dir_file(hal_camera_default, { sysfs_pg sysfs_camerafs sysfs_huawei_sensor sysfs_leds sysfs_devfreq_dir })
 allow hal_camera_default sysfs_pg:file w_file_perms;
 allow hal_camera_default { sysfs_camerafs sysfs_leds }:file rw_file_perms;
 get_prop(hal_camera_default, logd_prop)
+dontaudit hal_camera_default default_prop:file r_file_perms;
 set_prop(hal_camera_default, vendor_camera_prop)
 
 # Sensors HAL (sensorhub)
@@ -189,6 +199,7 @@ r_dir_file(hal_audio_default, sysfs_framebuffer)
 r_dir_file(hal_audio_default, sysfs_batteryinfo)
 r_dir_file(hal_audio_default, sysfs_huawei_sensor)
 allow hal_audio_default sysfs_huawei_sensor:file rw_file_perms;
+allow hal_audio_default radio_device:chr_file rw_file_perms;
 allow hal_audio_default self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
 allow hal_audio_default vendor_logcat_data_file:dir create_dir_perms;
 allow hal_audio_default vendor_logcat_data_file:file create_file_perms;
@@ -210,6 +221,7 @@ allow hal_gnss_default vendor_logcat_data_file:file create_file_perms;
 r_dir_file(hal_gnss_default, proc_gps)
 allow hal_gnss_default proc_gps:file rw_file_perms;
 allow hal_gnss_default proc_wakeup_sources:file r_file_perms;
+r_dir_file(hal_gnss_default, sysfs_hisi_connectivity)
 set_prop(hal_gnss_default, vendor_gps_prop)
 binder_call(hal_gnss_default, vendor_hisi_connectivity)
 binder_call(vendor_hisi_connectivity, hal_gnss_default)

@@ -37,3 +37,5 @@ allow vendor_hisi_connectivity proc_gps:file rw_file_perms;
 allow vendor_hisi_connectivity proc_wakeup_sources:file r_file_perms;
 
 allow vendor_hisi_connectivity { vendor_shell_exec vendor_toolbox_exec }:file rx_file_perms;
+allow vendor_hisi_connectivity self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
+dontaudit vendor_hisi_connectivity shell_data_file:dir search;

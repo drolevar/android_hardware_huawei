@@ -1,0 +1,46 @@
+//
+// SPDX-FileCopyrightText: The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+package {
+    default_applicable_licenses: ["huawei_compat_tinyxml2_v29_license"],
+}
+
+license {
+    name: "huawei_compat_tinyxml2_v29_license",
+    visibility: [":__subpackages__"],
+    license_kinds: [
+        "SPDX-license-identifier-Zlib",
+        "legacy_unencumbered",
+    ],
+    license_text: ["LICENSE"],
+}
+
+cc_prebuilt_library_shared {
+    name: "libtinyxml2-v29",
+    vendor: true,
+    compile_multilib: "both",
+    target: {
+        android_arm: {
+            srcs: ["arm/libtinyxml2-v29.so"],
+        },
+        android_arm64: {
+            srcs: ["arm64/libtinyxml2-v29.so"],
+        },
+    },
+    strip: {
+        none: true,
+    },
+    stl: "none",
+    shared_libs: [
+        "libc++",
+        "liblog",
+    ],
+    system_shared_libs: [
+        "libc",
+        "libm",
+        "libdl",
+    ],
+    check_elf_files: true,
+}

@@ -152,8 +152,10 @@
 /dev/dsm                                        u:object_r:vendor_dmd_device:s0
 /dev/(motionhub|sensorhub|ar)                   u:object_r:sensors_device:s0
 /dev/(ana_hs|ana_hs_core|deviceboxID|dig_hs_power|hi6402_hifi_misc|hifi_misc|smartpakit|soundtrigger_dma_drv|soundtrigger_socdsp_lp_pcm_drv|soundtrigger_socdsp_pcm_drv) u:object_r:audio_device:s0
+/dev/voice_proxy_ctl_dev                        u:object_r:audio_device:s0
 /dev/video[0-9]{1,2}                            u:object_r:camera_device:s0
 /dev/v4l-subdev.*                               u:object_r:camera_device:s0
+/dev/rpmsg-hisi.*                               u:object_r:camera_device:s0
 /dev/media[0-9]{1,2}                            u:object_r:video_device:s0
 /dev/hicam_buf.*                                u:object_r:vendor_cambuf_device:s0
 /dev/hi_vdec                                    u:object_r:vendor_vdec_device:s0
@@ -170,6 +172,7 @@
 /dev/ttyAMA5                                    u:object_r:vendor_gps_device:s0
 /dev/gpstty                                     u:object_r:vendor_gps_device:s0
 /dev/appvcom.*                                  u:object_r:radio_device:s0
+/dev/madapt                                     u:object_r:radio_device:s0
 /dev/ttySPI.*                                   u:object_r:radio_device:s0
 /dev/(hisi_perf_ctrl|acpuddr_link_governor_level|iaware_qos_ctrl) u:object_r:vendor_perf_ctrl_device:s0
 /dev/(pn544|cxd224x-i2c)                        u:object_r:nfc_device:s0
@@ -187,6 +190,7 @@
 /sys/devices/virtual/graphics/fb[0-9](/.*)?     u:object_r:sysfs_framebuffer:s0
 /sys/devices/platform/e8600000\.dpe(/.*)?       u:object_r:sysfs_framebuffer:s0
 /sys/touchscreen(/.*)?                          u:object_r:sysfs_touchscreen:s0
+/sys/nfc(/.*)?                                  u:object_r:sysfs_nfc_power_writable:s0
 
 # Same-process HAL implementations & transitive vendor dependencies (.225 parity)
 /vendor/lib(64)?/libc_secshared\.so                                         u:object_r:same_process_hal_file:s0

@@ -1,0 +1,570 @@
+{
+  "scope": "offline structural checks; not target linking or runtime validation",
+  "aosp_vndk29_revision": "2e659f04a7cde964415c82dd7507610769165408",
+  "platform_build_revision": "90d006387398ae6899145e6531a304500cfa0f70",
+  "tested_page_size": 4096,
+  "tools": {
+    "build/make/tools/check_elf_file.py": "3a56973b719aa01dec2c8b5f9a690535ac8f6ae9e9cd2d7364ea72f492a26bc9",
+    "prebuilts/clang/host/linux-x86/clang-r596125/bin/llvm-readobj": "99ffe78c4493f848f656e8c3b12691384c7cbd6ac0cbaf02056c79bc853d9c03",
+    "prebuilts/extract-tools/linux-x86/bin/patchelf-0_9": "8c71725a3c6db7e51b6fa757e9e6601af479de132747fe41b8fab04bcda47efc"
+  },
+  "abis": {
+    "arm": {
+      "files": {
+        "candidate": {
+          "sha256": "f0248618e02245de7016c7ace7a54a54e4f8f3fe5abe2dd891183036037da422",
+          "bytes": 67096,
+          "machine": 40,
+          "class": 1,
+          "soname": "libtinyxml2-v29.so",
+          "needed": [
+            "liblog.so",
+            "libc++.so",
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "aosp_vndk29": {
+          "sha256": "9c0a86bdf1b83df7aa0517a1023d09643e7958676938caa87836359f39b9b7f6",
+          "bytes": 55260,
+          "machine": 40,
+          "class": 1,
+          "soname": "libtinyxml2.so",
+          "needed": [
+            "liblog.so",
+            "libc++.so",
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_vndk29_tinyxml2": {
+          "sha256": "93c89be72f6adef30a266d4b0dcdd466785d51584376fd0f1c175ebe8d44525b",
+          "bytes": 55272,
+          "machine": 40,
+          "class": 1,
+          "soname": "libtinyxml2.so",
+          "needed": [
+            "liblog.so",
+            "libc++.so",
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_libcpp": {
+          "sha256": "3112422e0937171ab29ffb99c30d70b1f3eae19caec90ea1d9244f648250f799",
+          "bytes": 585000,
+          "machine": 40,
+          "class": 1,
+          "soname": "libc++.so",
+          "needed": [
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "platform_libcpp": {
+          "sha256": "64d1f38c5e39c4acf14a0f6ca9f052714f44a33a20c28dd0fce4b93b3cdc258e",
+          "bytes": 6712696,
+          "machine": 40,
+          "class": 1,
+          "soname": "libc++.so",
+          "needed": [
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_liblog": {
+          "sha256": "0124e60258fe2d0a16c9bb008358cad2477ced98032a8913018b1b20a10ee79c",
+          "bytes": 81744,
+          "machine": 40,
+          "class": 1,
+          "soname": "liblog.so",
+          "needed": [
+            "libc++.so",
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_libc": {
+          "sha256": "f2286a69431faa7691a44c5654c77af5ec4543f46cb300ef5ffc340d6a1b1ac2",
+          "bytes": 922444,
+          "machine": 40,
+          "class": 1,
+          "soname": "libc.so",
+          "needed": [
+            "ld-android.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_libm": {
+          "sha256": "7b022ac73ba14e29256bd7431f2388a488b774c0e63f5cc73d29bd3af5888c90",
+          "bytes": 141016,
+          "machine": 40,
+          "class": 1,
+          "soname": "libm.so",
+          "needed": [
+            "libc.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_libdl": {
+          "sha256": "a278b8a0f732292e547cc1f17c3019bb7c88bf37fd477fa10000c86bdae19e6e",
+          "bytes": 14024,
+          "machine": 40,
+          "class": 1,
+          "soname": "libdl.so",
+          "needed": [
+            "ld-android.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        }
+      },
+      "checker_runs": [
+        {
+          "libcpp_reference": "stock_libcpp",
+          "bionic_reference": "stock29 bootstrap",
+          "command": [
+            "/usr/bin/python3",
+            "-B",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/build/make/tools/check_elf_file.py",
+            "--llvm-readobj",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/prebuilts/clang/host/linux-x86/clang-r596125/bin/llvm-readobj",
+            "--soname",
+            "libtinyxml2-v29.so",
+            "--max-page-size",
+            "4096",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib/libc++.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib/liblog.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib/bootstrap/libc.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib/bootstrap/libm.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib/bootstrap/libdl.so",
+            "/home/drolevar/projects/huawei-blanc-los24/cache/worktrees/packaging-hardware/compat/libtinyxml2-v29/arm/libtinyxml2-v29.so"
+          ],
+          "exit_status": 0,
+          "stderr": ""
+        },
+        {
+          "libcpp_reference": "platform_libcpp",
+          "bionic_reference": "stock29 bootstrap",
+          "command": [
+            "/usr/bin/python3",
+            "-B",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/build/make/tools/check_elf_file.py",
+            "--llvm-readobj",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/prebuilts/clang/host/linux-x86/clang-r596125/bin/llvm-readobj",
+            "--soname",
+            "libtinyxml2-v29.so",
+            "--max-page-size",
+            "4096",
+            "--shared-lib",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/prebuilts/clang/host/linux-x86/clang-r596125/android_libc++/platform/arm/lib/libc++.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib/liblog.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib/bootstrap/libc.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib/bootstrap/libm.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib/bootstrap/libdl.so",
+            "/home/drolevar/projects/huawei-blanc-los24/cache/worktrees/packaging-hardware/compat/libtinyxml2-v29/arm/libtinyxml2-v29.so"
+          ],
+          "exit_status": 0,
+          "stderr": ""
+        },
+        {
+          "negative_case": "wrong_soname",
+          "expected_exit_status": 2,
+          "actual_exit_status": 2
+        },
+        {
+          "negative_case": "undeclared_dependencies",
+          "expected_exit_status": 2,
+          "actual_exit_status": 2
+        }
+      ],
+      "candidate_export_count": 225,
+      "candidate_import_versions": [
+        "",
+        "LIBC"
+      ],
+      "aosp_soname_only_reproduction": true,
+      "tinyxml2_imports": {
+        "_ZN8tinyxml211XMLDocument8LoadFileEPKc": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocumentC1EbNS_10WhitespaceE": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocumentD1Ev": [
+          ""
+        ],
+        "_ZNK8tinyxml210XMLElement12IntAttributeEPKci": [
+          ""
+        ],
+        "_ZNK8tinyxml27XMLNode17FirstChildElementEPKc": [
+          ""
+        ]
+      },
+      "missing_tinyxml2_symbols": []
+    },
+    "arm64": {
+      "files": {
+        "candidate": {
+          "sha256": "42caa46349dd20ec39ba2f76ed029c4d75e7957759be69b64fb5343c9fcab0d9",
+          "bytes": 91760,
+          "machine": 183,
+          "class": 2,
+          "soname": "libtinyxml2-v29.so",
+          "needed": [
+            "liblog.so",
+            "libc++.so",
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "aosp_vndk29": {
+          "sha256": "e2b662447e3e9078d80dd036c6f26cb1334e63ec1f1ce9cbf2da4a26b4ba65b7",
+          "bytes": 79760,
+          "machine": 183,
+          "class": 2,
+          "soname": "libtinyxml2.so",
+          "needed": [
+            "liblog.so",
+            "libc++.so",
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_vndk29_tinyxml2": {
+          "sha256": "d1eb59c06b6b3f1deacbcf27895d54b6db63d7433e053ad0cebe43d5c2100ca8",
+          "bytes": 79760,
+          "machine": 183,
+          "class": 2,
+          "soname": "libtinyxml2.so",
+          "needed": [
+            "liblog.so",
+            "libc++.so",
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_libcpp": {
+          "sha256": "9a30c7a29915eb00045ea429e35d9823b1f603bcca0f98cc60882d2cc2dcc3bf",
+          "bytes": 841832,
+          "machine": 183,
+          "class": 2,
+          "soname": "libc++.so",
+          "needed": [
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "platform_libcpp": {
+          "sha256": "25fb36995766b0af886eb9d39f843f969d7eb00ba8e9ae646660ac20f0a0827d",
+          "bytes": 8070320,
+          "machine": 183,
+          "class": 2,
+          "soname": "libc++.so",
+          "needed": [
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            16384,
+            16384,
+            16384,
+            16384
+          ]
+        },
+        "stock_liblog": {
+          "sha256": "833d990996913f43570bf45b914634dfb954cb0c3960d9509ddf3a7f0a436278",
+          "bytes": 105952,
+          "machine": 183,
+          "class": 2,
+          "soname": "liblog.so",
+          "needed": [
+            "libc++.so",
+            "libc.so",
+            "libm.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_libc": {
+          "sha256": "fd3e195abe970846351c71e47eaa0b3829c69428738c98f1ab45f025495845a6",
+          "bytes": 1136552,
+          "machine": 183,
+          "class": 2,
+          "soname": "libc.so",
+          "needed": [
+            "ld-android.so",
+            "libdl.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_libm": {
+          "sha256": "83c93a984861893d4acda0bc0b26b95ec4739c70216e0442fa014f989a135e08",
+          "bytes": 229376,
+          "machine": 183,
+          "class": 2,
+          "soname": "libm.so",
+          "needed": [
+            "libc.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        },
+        "stock_libdl": {
+          "sha256": "975b5f56014aee297b0c4875d7c377c9b09368d7f74fbdf1d72a20f806da0960",
+          "bytes": 14016,
+          "machine": 183,
+          "class": 2,
+          "soname": "libdl.so",
+          "needed": [
+            "ld-android.so"
+          ],
+          "load_alignments": [
+            4096,
+            4096,
+            4096
+          ]
+        }
+      },
+      "checker_runs": [
+        {
+          "libcpp_reference": "stock_libcpp",
+          "bionic_reference": "stock29 bootstrap",
+          "command": [
+            "/usr/bin/python3",
+            "-B",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/build/make/tools/check_elf_file.py",
+            "--llvm-readobj",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/prebuilts/clang/host/linux-x86/clang-r596125/bin/llvm-readobj",
+            "--soname",
+            "libtinyxml2-v29.so",
+            "--max-page-size",
+            "4096",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib64/libc++.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib64/liblog.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib64/bootstrap/libc.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib64/bootstrap/libm.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib64/bootstrap/libdl.so",
+            "/home/drolevar/projects/huawei-blanc-los24/cache/worktrees/packaging-hardware/compat/libtinyxml2-v29/arm64/libtinyxml2-v29.so"
+          ],
+          "exit_status": 0,
+          "stderr": ""
+        },
+        {
+          "libcpp_reference": "platform_libcpp",
+          "bionic_reference": "stock29 bootstrap",
+          "command": [
+            "/usr/bin/python3",
+            "-B",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/build/make/tools/check_elf_file.py",
+            "--llvm-readobj",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/prebuilts/clang/host/linux-x86/clang-r596125/bin/llvm-readobj",
+            "--soname",
+            "libtinyxml2-v29.so",
+            "--max-page-size",
+            "4096",
+            "--shared-lib",
+            "/home/drolevar/projects/huawei-blanc-los24/src/lineage-24.0/prebuilts/clang/host/linux-x86/clang-r596125/android_libc++/platform/aarch64/lib/libc++.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib64/liblog.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib64/bootstrap/libc.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib64/bootstrap/libm.so",
+            "--shared-lib",
+            "firmware/current/original-filesystems/system/lib64/bootstrap/libdl.so",
+            "/home/drolevar/projects/huawei-blanc-los24/cache/worktrees/packaging-hardware/compat/libtinyxml2-v29/arm64/libtinyxml2-v29.so"
+          ],
+          "exit_status": 0,
+          "stderr": ""
+        },
+        {
+          "negative_case": "wrong_soname",
+          "expected_exit_status": 2,
+          "actual_exit_status": 2
+        },
+        {
+          "negative_case": "undeclared_dependencies",
+          "expected_exit_status": 2,
+          "actual_exit_status": 2
+        }
+      ],
+      "candidate_export_count": 216,
+      "candidate_import_versions": [
+        "",
+        "LIBC"
+      ],
+      "aosp_soname_only_reproduction": true,
+      "tinyxml2_imports": {
+        "_ZN8tinyxml210XMLElement21FindOrCreateAttributeEPKc": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocument10NewElementEPKc": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocument14NewDeclarationEPKc": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocument7NewTextEPKc": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocument8LoadFileEPKc": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocument8SaveFileEP7__sFILEb": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocument8SaveFileEPKcb": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocumentC1EbNS_10WhitespaceE": [
+          ""
+        ],
+        "_ZN8tinyxml211XMLDocumentD1Ev": [
+          ""
+        ],
+        "_ZN8tinyxml212XMLAttribute12SetAttributeEi": [
+          ""
+        ],
+        "_ZN8tinyxml212XMLAttribute12SetAttributeEj": [
+          ""
+        ],
+        "_ZN8tinyxml27XMLNode14InsertEndChildEPS0_": [
+          ""
+        ],
+        "_ZN8tinyxml27XMLNode16InsertFirstChildEPS0_": [
+          ""
+        ],
+        "_ZNK8tinyxml210XMLElement12IntAttributeEPKci": [
+          ""
+        ],
+        "_ZNK8tinyxml210XMLElement12QueryIntTextEPi": [
+          ""
+        ],
+        "_ZNK8tinyxml210XMLElement14QueryFloatTextEPf": [
+          ""
+        ],
+        "_ZNK8tinyxml210XMLElement17QueryUnsignedTextEPj": [
+          ""
+        ],
+        "_ZNK8tinyxml210XMLElement17UnsignedAttributeEPKcj": [
+          ""
+        ],
+        "_ZNK8tinyxml210XMLElement7GetTextEv": [
+          ""
+        ],
+        "_ZNK8tinyxml27XMLNode17FirstChildElementEPKc": [
+          ""
+        ],
+        "_ZNK8tinyxml27XMLNode18NextSiblingElementEPKc": [
+          ""
+        ],
+        "_ZNK8tinyxml27XMLNode5ValueEv": [
+          ""
+        ]
+      },
+      "missing_tinyxml2_symbols": []
+    }
+  }
+}

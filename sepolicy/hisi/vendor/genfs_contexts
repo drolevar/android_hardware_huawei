@@ -17,6 +17,7 @@ genfscon sysfs /class/devfreq u:object_r:sysfs_devfreq_dir:s0
 genfscon sysfs /devices/platform/bluetooth_power/rfkill/rfkill0 u:object_r:sysfs_bluetooth_writable:s0
 genfscon proc /bluetooth/sleep u:object_r:proc_bluetooth_writable:s0
 genfscon proc /bluetooth/calibrate u:object_r:proc_bluetooth_writable:s0
+genfscon proc /bluetooth_power/data/calibrate u:object_r:proc_bluetooth_writable:s0
 
 # Kirin 970 display backlight & RGB notification LEDs
 genfscon sysfs /devices/platform/hisi_fb.1048577/leds u:object_r:sysfs_leds:s0
@@ -29,10 +30,21 @@ genfscon sysfs /devices/virtual/sensors u:object_r:sysfs_huawei_sensor:s0
 genfscon sysfs /class/sensors u:object_r:sysfs_huawei_sensor:s0
 genfscon sysfs /devices/virtual/camerafs u:object_r:sysfs_camerafs:s0
 genfscon sysfs /class/camerafs u:object_r:sysfs_camerafs:s0
+genfscon sysfs /firmware/devicetree/base/hisi,camera_arch_csudp u:object_r:sysfs_camerafs:s0
+genfscon sysfs /firmware/devicetree/base/hisi,hisi_camera u:object_r:sysfs_camerafs:s0
+genfscon sysfs /firmware/devicetree/base/huawei,camcfgdev u:object_r:sysfs_camerafs:s0
+genfscon sysfs /firmware/devicetree/base/huawei,camera_ldo u:object_r:sysfs_camerafs:s0
+genfscon sysfs /firmware/devicetree/base/huawei,hicam_buf u:object_r:sysfs_camerafs:s0
+genfscon sysfs /firmware/devicetree/base/smmu_cam u:object_r:sysfs_camerafs:s0
 
-# Kirin 970 GNSS, wakeup_sources, GPU memtrack & battery info nodes
+# Kirin 970 GNSS, wakeup_sources, GPU memtrack, SIM hotplug, connectivity DT & NFC nodes
 genfscon proc /gps u:object_r:proc_gps:s0
 genfscon proc /wakeup_sources u:object_r:proc_wakeup_sources:s0
 genfscon proc /gpu_memory u:object_r:proc_gpu_memory:s0
 genfscon proc /memtrack u:object_r:proc_gpu_memory:s0
 genfscon sysfs /devices/platform/battery/power_supply u:object_r:sysfs_batteryinfo:s0
+genfscon sysfs /kernel/sim u:object_r:sysfs_sim_hotplug:s0
+genfscon sysfs /firmware/devicetree/base/bcm_wifi u:object_r:sysfs_hisi_connectivity:s0
+genfscon sysfs /firmware/devicetree/base/bcm_bt u:object_r:sysfs_hisi_connectivity:s0
+genfscon sysfs /firmware/devicetree/base/gps_power u:object_r:sysfs_hisi_connectivity:s0
+genfscon sysfs /devices/platform/amba/fdf0d000.i2c/i2c-4/4-0028 u:object_r:sysfs_nfc_power_writable:s0

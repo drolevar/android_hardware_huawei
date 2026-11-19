@@ -16,6 +16,9 @@ allow rild { modem_file splashtwo_file vendor_logcat_data_file }:file create_fil
 allow rild { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };
 
 get_prop(rild, telephony_config_prop)
-dontaudit rild { default_prop config_prop }:file r_file_perms;
+dontaudit rild { default_prop config_prop system_prop }:file r_file_perms;
+dontaudit rild shell_data_file:dir search;
+r_dir_file(rild, sysfs_sim_hotplug)
+allow rild sysfs_sim_hotplug:file rw_file_perms;
 hal_client_domain(rild, vendor_hal_hisi_libteec)
 hal_client_domain(rild, vendor_hal_hisi_hwfactoryinterface)

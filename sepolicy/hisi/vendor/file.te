@@ -35,3 +35,5 @@ type sysfs_camerafs, fs_type, sysfs_type, mlstrustedobject;
 type proc_gps, fs_type, proc_type;
 type proc_gpu_memory, fs_type, proc_type;
 type proc_wakeup_sources, fs_type, proc_type;
+type sysfs_sim_hotplug, fs_type, sysfs_type;
+type sysfs_hisi_connectivity, fs_type, sysfs_type;

@@ -366,7 +366,14 @@ class Phase6BSepolicyTests(unittest.TestCase):
             )
 
         vnd_prop_ctx = (VENDOR / "property_contexts").read_text().splitlines()
-        for prop_key in ("vendor.rilprops_ready", "vendor.rild.", "vendor.hw_mc.", "persist.odm.config."):
+        for prop_key in (
+            "vendor.rilprops_ready",
+            "vendor.rild.",
+            "vendor.hw_mc.esim.",
+            "vendor.hw_mc.radio.",
+            "vendor.hw_mc.ril.",
+            "persist.odm.config.",
+        ):
             self.assertTrue(
                 any(
                     line.split() == [prop_key, "u:object_r:vendor_rild_prop:s0"]
@@ -375,6 +382,14 @@ class Phase6BSepolicyTests(unittest.TestCase):
                 ),
                 f"Missing {prop_key} in vendor/property_contexts",
             )
+        self.assertTrue(
+            any(
+                line.split() == ["vendor.hw_mc.aps.", "u:object_r:vendor_display_prop:s0"]
+                for line in vnd_prop_ctx
+                if line.strip() and not line.lstrip().startswith("#")
+            ),
+            "Missing vendor.hw_mc.aps. -> vendor_display_prop in vendor/property_contexts",
+        )
 
         widevine_te = re.sub(r"#.*", "", (VENDOR / "vendor_hal_drm_widevine.te").read_text())
         self.assertIn("allow vendor_hal_drm_widevine vendor_mediadrm_data_file:file create_file_perms;", widevine_te)
@@ -388,7 +403,10 @@ class Phase6BSepolicyTests(unittest.TestCase):
             "set_prop(rild, vendor_rild_prop)",
             "allow rild vendor_modem_block_device:blk_file r_file_perms;",
             "get_prop(rild, telephony_config_prop)",
-            "dontaudit rild { default_prop config_prop }:file r_file_perms;",
+            "dontaudit rild { default_prop config_prop system_prop }:file r_file_perms;",
+            "dontaudit rild shell_data_file:dir search;",
+            "r_dir_file(rild, sysfs_sim_hotplug)",
+            "allow rild sysfs_sim_hotplug:file rw_file_perms;",
             "hal_client_domain(rild, vendor_hal_hisi_libteec)",
             "hal_client_domain(rild, vendor_hal_hisi_hwfactoryinterface)",
         ):
@@ -396,6 +414,66 @@ class Phase6BSepolicyTests(unittest.TestCase):
 
         tee_te = re.sub(r"#.*", "", (VENDOR / "tee.te").read_text())
         self.assertEqual(len(re.findall(r"(?m)^\s*rild$", tee_te)), 3)
+
+    def test_attempt9_camera_ril_hwc_bt_gps_sepolicy_closure(self):
+        decls = load_type_declarations()
+        for fs_type in ("sysfs_sim_hotplug", "sysfs_hisi_connectivity"):
+            self.assertIn("fs_type", decls[fs_type])
+
+        prop_te = (VENDOR / "property.te").read_text()
+        self.assertIn("vendor_internal_prop(vendor_display_prop)", prop_te)
+
+        rules = load_file_contexts()
+        self.assertEqual(resolve_type(rules, "/dev/madapt"), "radio_device")
+        self.assertEqual(resolve_type(rules, "/dev/rpmsg-hisi0"), "camera_device")
+        self.assertEqual(resolve_type(rules, "/dev/voice_proxy_ctl_dev"), "audio_device")
+        self.assertEqual(resolve_type(rules, "/sys/nfc/nfc_chip_type"), "sysfs_nfc_power_writable")
+
+        genfs_txt = (VENDOR / "genfs_contexts").read_text()
+        for needle in (
+            "genfscon proc /bluetooth_power/data/calibrate u:object_r:proc_bluetooth_writable:s0",
+            "genfscon sysfs /firmware/devicetree/base/hisi,camera_arch_csudp u:object_r:sysfs_camerafs:s0",
+            "genfscon sysfs /firmware/devicetree/base/hisi,hisi_camera u:object_r:sysfs_camerafs:s0",
+            "genfscon sysfs /firmware/devicetree/base/huawei,camcfgdev u:object_r:sysfs_camerafs:s0",
+            "genfscon sysfs /firmware/devicetree/base/huawei,camera_ldo u:object_r:sysfs_camerafs:s0",
+            "genfscon sysfs /firmware/devicetree/base/huawei,hicam_buf u:object_r:sysfs_camerafs:s0",
+            "genfscon sysfs /firmware/devicetree/base/smmu_cam u:object_r:sysfs_camerafs:s0",
+            "genfscon sysfs /kernel/sim u:object_r:sysfs_sim_hotplug:s0",
+            "genfscon sysfs /firmware/devicetree/base/bcm_wifi u:object_r:sysfs_hisi_connectivity:s0",
+            "genfscon sysfs /firmware/devicetree/base/bcm_bt u:object_r:sysfs_hisi_connectivity:s0",
+            "genfscon sysfs /firmware/devicetree/base/gps_power u:object_r:sysfs_hisi_connectivity:s0",
+            "genfscon sysfs /devices/platform/amba/fdf0d000.i2c/i2c-4/4-0028 u:object_r:sysfs_nfc_power_writable:s0",
+        ):
+            self.assertIn(needle, genfs_txt)
+
+        pub_libteec = re.sub(r"#.*", "", (POLICY / "public/vendor_hal_hisi_libteec.te").read_text())
+        self.assertIn("allow vendor_hal_hisi_libteec_client vendor_hal_hisi_libteec_server:fd use;", pub_libteec)
+        self.assertIn("allow vendor_hal_hisi_libteec_server vendor_hal_hisi_libteec_client:fd use;", pub_libteec)
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        for needle in (
+            "get_prop(hal_graphics_composer_default, vendor_display_prop)",
+            "set_prop(vendor_hal_hisi_display_default, vendor_display_prop)",
+            "get_prop({ hal_graphics_composer_default hal_graphics_allocator_default }, vendor_camera_prop)",
+            "hal_client_domain(hal_camera_default, hal_camera)",
+            "hal_client_domain(hal_camera_default, vendor_hal_hisi_libteec)",
+            "hal_client_domain(hal_camera_default, vendor_hal_hisi_hwfactoryinterface)",
+            "binder_call(hal_camera_default, system_server)",
+            "binder_call(system_server, hal_camera_default)",
+            "r_dir_file(hal_camera_default, { sysfs_pg sysfs_camerafs sysfs_huawei_sensor sysfs_leds sysfs_devfreq_dir })",
+            "dontaudit hal_camera_default default_prop:file r_file_perms;",
+            "allow hal_audio_default radio_device:chr_file rw_file_perms;",
+            "r_dir_file(hal_gnss_default, sysfs_hisi_connectivity)",
+            "r_dir_file(hal_secure_element_default, sysfs_nfc_power_writable)",
+        ):
+            self.assertIn(needle, clients_te)
+
+        init_te = re.sub(r"#.*", "", (VENDOR / "init.te").read_text())
+        self.assertIn("r_dir_file(init, sysfs_hisi_connectivity)", init_te)
+
+        conn_te = re.sub(r"#.*", "", (VENDOR / "vendor_hisi_connectivity.te").read_text())
+        self.assertIn("allow vendor_hisi_connectivity self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;", conn_te)
+        self.assertIn("dontaudit vendor_hisi_connectivity shell_data_file:dir search;", conn_te)
 
 
 if __name__ == "__main__":
