@@ -84,12 +84,12 @@ Vibrator::~Vibrator() {
 
 bool Vibrator::writeSysfsNode(const char* node, const std::string& value) const {
     const std::string path = mSysfsRoot + "/" + node;
-    android::base::unique_fd fd(TEMP_FAILURE_RETRY(open(path.c_str(), O_WRONLY | O_CLOEXEC)));
+    ::android::base::unique_fd fd(TEMP_FAILURE_RETRY(open(path.c_str(), O_WRONLY | O_CLOEXEC)));
     if (fd < 0) {
         PLOG(ERROR) << "Failed to open vibrator sysfs node " << path;
         return false;
     }
-    if (!android::base::WriteFully(fd, value.data(), value.size())) {
+    if (!::android::base::WriteFully(fd, value.data(), value.size())) {
         PLOG(ERROR) << "Failed to write to vibrator sysfs node " << path;
         return false;
     }
