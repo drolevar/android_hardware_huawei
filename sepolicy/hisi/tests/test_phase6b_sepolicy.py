@@ -355,9 +355,18 @@ class Phase6BSepolicyTests(unittest.TestCase):
                 ),
                 f"Missing {prop_key} in private/property_contexts",
             )
+        for prop_key in ("ro.config.hisi_cdma_supported", "ro.config.dsds_mode"):
+            self.assertTrue(
+                any(
+                    line.split()[:2] == [prop_key, "u:object_r:telephony_config_prop:s0"]
+                    for line in priv_prop_ctx
+                    if line.strip() and not line.lstrip().startswith("#")
+                ),
+                f"Missing {prop_key} in private/property_contexts",
+            )
 
         vnd_prop_ctx = (VENDOR / "property_contexts").read_text().splitlines()
-        for prop_key in ("vendor.rilprops_ready", "vendor.rild.", "persist.odm.config."):
+        for prop_key in ("vendor.rilprops_ready", "vendor.rild.", "vendor.hw_mc.", "persist.odm.config."):
             self.assertTrue(
                 any(
                     line.split() == [prop_key, "u:object_r:vendor_rild_prop:s0"]
@@ -378,7 +387,8 @@ class Phase6BSepolicyTests(unittest.TestCase):
         for needle in (
             "set_prop(rild, vendor_rild_prop)",
             "allow rild vendor_modem_block_device:blk_file r_file_perms;",
-            "get_prop(rild, { config_prop telephony_config_prop })",
+            "get_prop(rild, telephony_config_prop)",
+            "dontaudit rild { default_prop config_prop }:file r_file_perms;",
             "hal_client_domain(rild, vendor_hal_hisi_libteec)",
             "hal_client_domain(rild, vendor_hal_hisi_hwfactoryinterface)",
         ):

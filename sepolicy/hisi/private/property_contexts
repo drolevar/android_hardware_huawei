@@ -5,3 +5,36 @@ ro.bpf.kver_override u:object_r:exported_default_prop:s0 exact string
 ro.connectivity.chiptype u:object_r:exported_default_prop:s0 exact string
 ro.connectivity.sub_chiptype u:object_r:exported_default_prop:s0 exact string
 ro.quick_broadcast_cardstatus u:object_r:exported_default_prop:s0 exact string
+
+# Huawei Kirin 970 / Balong RIL telephony config flags (set by libinit_hisi / system.prop, read by rild & phone app)
+ro.config.att.csg                u:object_r:telephony_config_prop:s0 exact string
+ro.config.cl_volte_autoswitch    u:object_r:telephony_config_prop:s0 exact string
+ro.config.delay_attach_enabled   u:object_r:telephony_config_prop:s0 exact string
+ro.config.dsds_mode              u:object_r:telephony_config_prop:s0 exact string
+ro.config.fast_switch_simslot    u:object_r:telephony_config_prop:s0 exact string
+ro.config.full_network_support   u:object_r:telephony_config_prop:s0 exact string
+ro.config.gsm_nonsupport         u:object_r:telephony_config_prop:s0 exact string
+ro.config.hisi_cdma_supported    u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_4.5gplus            u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_ReduceSAR           u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_allow_pdp_auth      u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_clearcode_pdp       u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_data_retry_enabled  u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_dsdspowerup         u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_ecclist_nocard      u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_ecclist_withcard    u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_extend_apdu         u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_gcf                 u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_globalEcc           u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_ismcoex             u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_laaplus             u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_opta                u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_optb                u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_volte_on            u:object_r:telephony_config_prop:s0 exact string
+ro.config.ipv4.mtu               u:object_r:telephony_config_prop:s0 exact string
+ro.config.ipv6.mtu               u:object_r:telephony_config_prop:s0 exact string
+ro.config.is_sup_cnap            u:object_r:telephony_config_prop:s0 exact string
+ro.config.power                  u:object_r:telephony_config_prop:s0 exact string
+ro.config.sup_lte_high_speed     u:object_r:telephony_config_prop:s0 exact string
+ro.config.support_wcdma_modem1   u:object_r:telephony_config_prop:s0 exact string
+ro.config.wps_enabled            u:object_r:telephony_config_prop:s0 exact string

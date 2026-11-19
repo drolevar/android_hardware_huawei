@@ -33,4 +33,5 @@ persist.odm.user.       u:object_r:vendor_rild_prop:s0
 vendor.rilprops_ready   u:object_r:vendor_rild_prop:s0
 vendor.rild.            u:object_r:vendor_rild_prop:s0
 vendor.ril.             u:object_r:vendor_rild_prop:s0
+vendor.hw_mc.           u:object_r:vendor_rild_prop:s0
 persist.vendor.radio.   u:object_r:vendor_rild_prop:s0
