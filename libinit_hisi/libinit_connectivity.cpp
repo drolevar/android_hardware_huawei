@@ -106,8 +106,14 @@ std::vector<std::pair<std::string, std::string>> parse_phone_prop_section(
     while (std::getline(iss, raw_line)) {
         const std::string line = trim_prop_value(raw_line);
         if (!in_section) {
-            if (!line.empty() && to_upper_ascii(line) == header) {
-                in_section = true;
+            if (!line.empty() && line[0] == '[') {
+                std::string candidate = to_upper_ascii(line);
+                if (!candidate.empty() && candidate.back() == ':') {
+                    candidate = trim_prop_value(candidate.substr(0, candidate.size() - 1));
+                }
+                if (candidate == header) {
+                    in_section = true;
+                }
             }
             continue;
         }

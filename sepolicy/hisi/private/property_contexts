@@ -1,2 +1,7 @@
 # Kirin 970 backported 5.10 BPF ABI override (readable by bpfloader, netd, system_server)
 ro.bpf.kver_override u:object_r:exported_default_prop:s0 exact string
+
+# Kirin 970 connectivity chip identification & phone.prop flags (set by libinit_hisi, read by vendor HALs/rild/gpsdaemon)
+ro.connectivity.chiptype u:object_r:exported_default_prop:s0 exact string
+ro.connectivity.sub_chiptype u:object_r:exported_default_prop:s0 exact string
+ro.quick_broadcast_cardstatus u:object_r:exported_default_prop:s0 exact string

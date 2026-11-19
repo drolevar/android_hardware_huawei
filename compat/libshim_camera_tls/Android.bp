@@ -7,9 +7,15 @@ cc_library_shared {
     name: "libshim_camera_tls",
     vendor: true,
     srcs: ["camera_tls_shim.cpp"],
+    stl: "none",
+    system_shared_libs: ["libc"],
     cflags: [
         "-Wall",
         "-Wextra",
         "-Werror",
+    ],
+    ldflags: [
+        "-Wl,-z,global",
+        "-Wl,-z,nodelete",
     ],
 }

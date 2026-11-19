@@ -336,8 +336,36 @@ class Phase6BSepolicyTests(unittest.TestCase):
             "set_prop(hal_power_default, vendor_power_prop)",
             "allow hal_memtrack_default proc_gpu_memory:file r_file_perms;",
             "r_dir_file(hal_audio_default, sysfs_batteryinfo)",
+            "r_dir_file(hal_audio_default, sysfs_huawei_sensor)",
+            "allow hal_audio_default sysfs_huawei_sensor:file rw_file_perms;",
         ):
             self.assertIn(needle, clients_te)
+
+        priv_prop_ctx = (POLICY / "private/property_contexts").read_text().splitlines()
+        for prop_key in (
+            "ro.connectivity.chiptype",
+            "ro.connectivity.sub_chiptype",
+            "ro.quick_broadcast_cardstatus",
+        ):
+            self.assertTrue(
+                any(
+                    line.split()[:2] == [prop_key, "u:object_r:exported_default_prop:s0"]
+                    for line in priv_prop_ctx
+                    if line.strip() and not line.lstrip().startswith("#")
+                ),
+                f"Missing {prop_key} in private/property_contexts",
+            )
+
+        vnd_prop_ctx = (VENDOR / "property_contexts").read_text().splitlines()
+        for prop_key in ("vendor.rilprops_ready", "vendor.rild.", "persist.odm.config."):
+            self.assertTrue(
+                any(
+                    line.split() == [prop_key, "u:object_r:vendor_rild_prop:s0"]
+                    for line in vnd_prop_ctx
+                    if line.strip() and not line.lstrip().startswith("#")
+                ),
+                f"Missing {prop_key} in vendor/property_contexts",
+            )
 
         widevine_te = re.sub(r"#.*", "", (VENDOR / "vendor_hal_drm_widevine.te").read_text())
         self.assertIn("allow vendor_hal_drm_widevine vendor_mediadrm_data_file:file create_file_perms;", widevine_te)
@@ -347,8 +375,17 @@ class Phase6BSepolicyTests(unittest.TestCase):
         self.assertIn("allow vendor_hisi_connectivity fwk_sensor_hwservice:hwservice_manager find;", conn_te)
 
         rild_te = re.sub(r"#.*", "", (VENDOR / "rild.te").read_text())
-        self.assertIn("set_prop(rild, vendor_rild_prop)", rild_te)
-        self.assertIn("allow rild vendor_modem_block_device:blk_file r_file_perms;", rild_te)
+        for needle in (
+            "set_prop(rild, vendor_rild_prop)",
+            "allow rild vendor_modem_block_device:blk_file r_file_perms;",
+            "get_prop(rild, { config_prop telephony_config_prop })",
+            "hal_client_domain(rild, vendor_hal_hisi_libteec)",
+            "hal_client_domain(rild, vendor_hal_hisi_hwfactoryinterface)",
+        ):
+            self.assertIn(needle, rild_te)
+
+        tee_te = re.sub(r"#.*", "", (VENDOR / "tee.te").read_text())
+        self.assertEqual(len(re.findall(r"(?m)^\s*rild$", tee_te)), 3)
 
 
 if __name__ == "__main__":

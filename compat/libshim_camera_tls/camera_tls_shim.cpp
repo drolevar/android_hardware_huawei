@@ -60,9 +60,9 @@ void init_tls_key() {
  * __cxa_thread_atexit_impl re-enters linker64::__loader_add_thread_local_dtor and
  * deadlocks on g_dl_mutex.
  *
- * Preloaded strictly for CameraDaemon, whose loaded camera DSOs remain mapped for
- * process lifetime, so (void)dso_symbol is intentional and zero libdl/linker64 calls
- * are made here.
+ * Linked as DT_NEEDED with DF_1_GLOBAL | DF_1_NODELETE strictly for CameraDaemon,
+ * whose loaded camera DSOs remain mapped for process lifetime, so
+ * (void)dso_symbol is intentional and zero libdl/linker64 calls are made here.
  */
 extern "C" __attribute__((visibility("default"))) int __cxa_thread_atexit(
         void (*dtor)(void*), void* obj, void* dso_symbol) {

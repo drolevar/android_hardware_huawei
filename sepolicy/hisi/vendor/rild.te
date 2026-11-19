@@ -14,3 +14,7 @@ allow rild { modem_file splashtwo_file vendor_logcat_data_file }:dir create_dir_
 allow rild { modem_file splashtwo_file vendor_logcat_data_file }:file create_file_perms;
 
 allow rild { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };
+
+get_prop(rild, { config_prop telephony_config_prop })
+hal_client_domain(rild, vendor_hal_hisi_libteec)
+hal_client_domain(rild, vendor_hal_hisi_hwfactoryinterface)

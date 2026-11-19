@@ -65,6 +65,7 @@ allow {
     vendor_hal_hisi_hwfactoryinterface_default
     vendor_hal_hisi_misc_default
     mediacodec
+    rild
 } tee:unix_stream_socket connectto;
 
 allow {
@@ -81,6 +82,7 @@ allow {
     vendor_hal_hisi_hwfactoryinterface_default
     vendor_hal_hisi_misc_default
     mediacodec
+    rild
 } tee:fd use;
 
 allow {
@@ -97,4 +99,5 @@ allow {
     vendor_hal_hisi_hwfactoryinterface_default
     vendor_hal_hisi_misc_default
     mediacodec
+    rild
 } teecd_device:chr_file { rw_file_perms map };
