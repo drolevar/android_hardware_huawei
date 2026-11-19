@@ -60,6 +60,7 @@ allow {
     zygote
 } ion_device:chr_file r_file_perms;
 
+hal_client_domain(hal_graphics_composer_default, hal_graphics_allocator)
 hal_client_domain(hal_graphics_composer_default, vendor_hal_hisi_display)
 hal_client_domain(hal_graphics_composer_default, vendor_hal_hisi_perf)
 hal_client_domain(mediacodec, vendor_hal_hisi_display)
@@ -78,9 +79,12 @@ allow vendor_hal_hisi_media_default {
     vendor_venc_device
     vendor_cambuf_device
 }:chr_file rw_file_perms;
+allow mediacodec { vendor_vdec_device vendor_venc_device vendor_jpu_device }:chr_file rw_file_perms;
 
 r_dir_file({ hal_graphics_composer_default vendor_hal_hisi_display_default }, sysfs_framebuffer)
 allow { hal_graphics_composer_default vendor_hal_hisi_display_default } sysfs_framebuffer:file rw_file_perms;
+r_dir_file({ hal_graphics_composer_default vendor_hal_hisi_display_default }, sysfs_devfreq_dir)
+allow hal_graphics_composer_default self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
 allow { hal_graphics_composer_default vendor_hal_hisi_display_default } {
     vendor_hwcdump_data_file
     vendor_logcat_data_file
@@ -171,3 +175,12 @@ allow hal_audio_default self:netlink_kobject_uevent_socket create_socket_perms_n
 allow hal_audio_default vendor_logcat_data_file:dir create_dir_perms;
 allow hal_audio_default vendor_logcat_data_file:file create_file_perms;
 dontaudit hal_audio_default { default_prop config_prop }:file r_file_perms;
+
+# Bluetooth & Wi-Fi NVE MAC files
+r_dir_file(hal_bluetooth_default, vendor_bluedroid_data_file)
+r_dir_file(hal_wifi_default, vendor_wlan_data_file)
+allow { hal_wifi_supplicant_default hal_wifi_hostapd_default } vendor_wlan_data_file:dir search;
+
+# Fingerprint HAL
+allow hal_fingerprint_default vendor_fingerprint_device:chr_file rw_file_perms;
+allow hal_fingerprint_default { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };

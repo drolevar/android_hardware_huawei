@@ -19,6 +19,8 @@ type vendor_nfc_data_file, file_type, data_file_type;
 type vendor_mediadrm_data_file, file_type, data_file_type;
 type vendor_logcat_data_file, file_type, data_file_type;
 type vendor_hwcdump_data_file, file_type, data_file_type;
+type vendor_bluedroid_data_file, file_type, data_file_type;
+type vendor_wlan_data_file, file_type, data_file_type;
 
 # Kirin sysfs nodes
 type sysfs_hisee, fs_type, sysfs_type, mlstrustedobject;

@@ -10,6 +10,8 @@
 #include <android-base/logging.h>
 #include <android-base/properties.h>
 
+#include <sys/stat.h>
+#include <unistd.h>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -20,6 +22,8 @@ template <typename T>
 static void set(const std::string& path, const T& value) {
     std::ofstream file(path);
     file << value << std::endl;
+    file.close();
+    chmod(path.c_str(), 0664);
 }
 
 std::string parse_mac(const std::string& mac) {

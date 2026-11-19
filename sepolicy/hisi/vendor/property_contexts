@@ -1,1 +1,2 @@
 odm.xcollie.            u:object_r:vendor_xcollie_prop:s0
+vendor.conn_macs.ready  u:object_r:vendor_hisi_conn_prop:s0

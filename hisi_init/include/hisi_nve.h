@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-constexpr const char* kPropMacsAreReady = "sys.conn_macs.ready";
+constexpr const char* kPropMacsAreReady = "vendor.conn_macs.ready";
 
 enum nv_operation {
     NV_WRITE = 0,

@@ -8,3 +8,11 @@ genfscon sysfs /class/graphics u:object_r:sysfs_framebuffer:s0
 # Kirin 970 audio hardware devicetree sysfs nodes
 genfscon sysfs /firmware/devicetree/base/audio_hw_config u:object_r:sysfs_audio_hw_config:s0
 genfscon sysfs /firmware/devicetree/base/smartpakit u:object_r:sysfs_audio_hw_config:s0
+
+# Kirin 970 DDR devfreq sysfs nodes (/sys/class/devfreq/ddrfreq -> fffc0000.ddr_devfreq)
+genfscon sysfs /devices/platform/fffc0000.ddr_devfreq/devfreq/ddrfreq u:object_r:sysfs_devfreq_dir:s0
+genfscon sysfs /class/devfreq u:object_r:sysfs_devfreq_dir:s0
+
+# Kirin 970 Bluetooth rfkill & bluesleep procfs nodes
+genfscon sysfs /devices/platform/bluetooth_power/rfkill/rfkill0 u:object_r:sysfs_bluetooth_writable:s0
+genfscon proc /bluetooth/sleep u:object_r:proc_bluetooth_writable:s0

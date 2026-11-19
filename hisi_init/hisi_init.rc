@@ -1,8 +1,9 @@
 on post-fs-data
-    # Create the directories used by the Bluetooth subsystem
-    mkdir /data/vendor/bluedroid 0771 bluetooth bluetooth
+    # Create the directories used by Bluetooth and Wi-Fi MAC provisioning
+    mkdir /data/vendor/bluedroid 0770 bluetooth bluetooth
+    mkdir /data/vendor/wifi 0770 wifi wifi
 
-on property:sys.conn_macs.ready=1
+on property:vendor.conn_macs.ready=1
     # Bluetooth
     chown bluetooth bluetooth /data/vendor/bluedroid/macbt
     chmod 0664 /data/vendor/bluedroid/macbt
@@ -14,5 +15,5 @@ on property:sys.conn_macs.ready=1
 service vendor.hisi_init /vendor/bin/hisi_init
     class main
     user root
-    group system
+    group system bluetooth wifi
     oneshot

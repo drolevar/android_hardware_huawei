@@ -18,6 +18,7 @@ allow vendor_hisi_oeminfo_nvm_server {
     vendor_nve_block_device
     vendor_certification_device
 }:blk_file rw_file_perms;
+allow vendor_hisi_oeminfo_nvm_server vendor_nve_block_device:chr_file rw_file_perms;
 allowxperm vendor_hisi_oeminfo_nvm_server vendor_oeminfo_nvm_device:blk_file ioctl 0x1260;
 
 allow vendor_hisi_oeminfo_nvm_server device:dir rw_dir_perms;

@@ -216,6 +216,53 @@ class Phase6BSepolicyTests(unittest.TestCase):
         ):
             self.assertIn(needle, clients_te)
 
+    def test_attempt7_ddrfreq_nve_mac_bluetooth_and_fingerprint(self):
+        decls = load_type_declarations()
+        self.assertIn("data_file_type", decls["vendor_bluedroid_data_file"])
+        self.assertIn("data_file_type", decls["vendor_wlan_data_file"])
+
+        rules = load_file_contexts()
+        self.assertEqual(resolve_type(rules, "/data/vendor/bluedroid/macbt"), "vendor_bluedroid_data_file")
+        self.assertEqual(resolve_type(rules, "/data/vendor/wifi/macwlan"), "vendor_wlan_data_file")
+
+        genfs_txt = (VENDOR / "genfs_contexts").read_text()
+        self.assertIn("genfscon sysfs /devices/platform/fffc0000.ddr_devfreq/devfreq/ddrfreq u:object_r:sysfs_devfreq_dir:s0", genfs_txt)
+        self.assertIn("genfscon sysfs /class/devfreq u:object_r:sysfs_devfreq_dir:s0", genfs_txt)
+        self.assertIn("genfscon sysfs /devices/platform/bluetooth_power/rfkill/rfkill0 u:object_r:sysfs_bluetooth_writable:s0", genfs_txt)
+        self.assertIn("genfscon proc /bluetooth/sleep u:object_r:proc_bluetooth_writable:s0", genfs_txt)
+
+        prop_te = (VENDOR / "property.te").read_text()
+        self.assertIn("vendor_internal_prop(vendor_hisi_conn_prop)", prop_te)
+        prop_ctx = (VENDOR / "property_contexts").read_text().splitlines()
+        self.assertTrue(
+            any(line.split() == ["vendor.conn_macs.ready", "u:object_r:vendor_hisi_conn_prop:s0"] for line in prop_ctx if line.strip())
+        )
+
+        hisi_init_te = re.sub(r"#.*", "", (VENDOR / "vendor_hisi_init.te").read_text())
+        for needle in (
+            "allow vendor_hisi_init block_device:dir search;",
+            "allow vendor_hisi_init vendor_nve_block_device:blk_file r_file_perms;",
+            "allow vendor_hisi_init { vendor_bluedroid_data_file vendor_wlan_data_file }:file create_file_perms;",
+            "set_prop(vendor_hisi_init, vendor_hisi_conn_prop)",
+            "get_prop(vendor_init, vendor_hisi_conn_prop)",
+        ):
+            self.assertIn(needle, hisi_init_te)
+
+        oeminfo_te = re.sub(r"#.*", "", (VENDOR / "vendor_hisi_oeminfo_nvm_server.te").read_text())
+        self.assertIn("allow vendor_hisi_oeminfo_nvm_server vendor_nve_block_device:chr_file rw_file_perms;", oeminfo_te)
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        for needle in (
+            "hal_client_domain(hal_graphics_composer_default, hal_graphics_allocator)",
+            "r_dir_file({ hal_graphics_composer_default vendor_hal_hisi_display_default }, sysfs_devfreq_dir)",
+            "allow hal_graphics_composer_default self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;",
+            "allow mediacodec { vendor_vdec_device vendor_venc_device vendor_jpu_device }:chr_file rw_file_perms;",
+            "r_dir_file(hal_bluetooth_default, vendor_bluedroid_data_file)",
+            "r_dir_file(hal_wifi_default, vendor_wlan_data_file)",
+            "allow hal_fingerprint_default vendor_fingerprint_device:chr_file rw_file_perms;",
+        ):
+            self.assertIn(needle, clients_te)
+
 
 if __name__ == "__main__":
     unittest.main()
