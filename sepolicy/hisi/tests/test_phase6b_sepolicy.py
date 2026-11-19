@@ -191,6 +191,8 @@ class Phase6BSepolicyTests(unittest.TestCase):
             "/vendor/lib64/hw/android.hardware.graphics.mapper@2.0-impl-2.1.so",
         ):
             self.assertEqual(resolve_type(rules, so_path), "same_process_hal_file")
+        # libiawareperf_client.so must not override AOSP's default vendor_file label in hw file_contexts.
+        self.assertEqual([t for pat, t in rules if re.fullmatch(pat, "/vendor/lib64/libiawareperf_client.so")], [])
         self.assertEqual(
             resolve_type(rules, "/sys/devices/virtual/graphics/fb0/vsync_event"),
             "sysfs_framebuffer",

@@ -190,4 +190,7 @@
 /vendor/lib(64)?/vendor\.huawei\.hardware\.graphics\.gpucommon@1\.0\.so     u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/vendor\.huawei\.hardware\.graphics\.mediacomm@2\.[01]\.so  u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/libmediacomm@2\.0-client\.so                               u:object_r:same_process_hal_file:s0
-/vendor/lib(64)?/libiawareperf_client\.so                                   u:object_r:same_process_hal_file:s0
+# libiawareperf_client.so is an open-source AIDL IPower client stub linking
+# android.hardware.power-V2-ndk.so + libbinder_ndk.so for hal_fingerprint_default
+# only; it intentionally remains vendor_file to preserve Treble binder isolation
+# and strict SP-HAL DT_NEEDED closure.
