@@ -1,5 +1,8 @@
 type vendor_hal_hisi_media_default, domain;
 hal_server_domain(vendor_hal_hisi_media_default, vendor_hal_hisi_media)
+hal_server_domain(vendor_hal_hisi_media_default, vendor_hal_hisi_display)
 
 type vendor_hal_hisi_media_default_exec, exec_type, vendor_file_type, file_type;
 init_daemon_domain(vendor_hal_hisi_media_default)
+
+allow vendor_hal_hisi_media_default { surfaceflinger mediaserver }:fd use;

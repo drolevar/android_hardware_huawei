@@ -25,3 +25,4 @@ type sysfs_hisee, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_pg, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_framebuffer, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_touchscreen, fs_type, sysfs_type, mlstrustedobject;
+type sysfs_audio_hw_config, fs_type, sysfs_type, mlstrustedobject;

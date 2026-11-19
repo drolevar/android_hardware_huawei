@@ -182,6 +182,38 @@ class Phase6BSepolicyTests(unittest.TestCase):
         self.assertIn("r_dir_file(vendor_init, sysfs_android_usb)", vinit_te)
         self.assertIn("allow vendor_init sysfs_android_usb:file { w_file_perms setattr };", vinit_te)
 
+    def test_attempt6_sphal_ion_vsync_mediacomm_camera_sensors_audio(self):
+        rules = load_file_contexts()
+        for so_path in (
+            "/vendor/lib/libc_secshared.so",
+            "/vendor/lib64/libc_secshared.so",
+            "/vendor/lib64/hw/gralloc.kirin970.so",
+            "/vendor/lib64/hw/android.hardware.graphics.mapper@2.0-impl-2.1.so",
+        ):
+            self.assertEqual(resolve_type(rules, so_path), "same_process_hal_file")
+        self.assertEqual(
+            resolve_type(rules, "/sys/devices/virtual/graphics/fb0/vsync_event"),
+            "sysfs_framebuffer",
+        )
+
+        genfs_txt = (VENDOR / "genfs_contexts").read_text()
+        self.assertIn("genfscon sysfs /devices/virtual/graphics/fb0 u:object_r:sysfs_framebuffer:s0", genfs_txt)
+        self.assertIn("genfscon sysfs /firmware/devicetree/base/audio_hw_config u:object_r:sysfs_audio_hw_config:s0", genfs_txt)
+        self.assertIn("genfscon sysfs /firmware/devicetree/base/smartpakit u:object_r:sysfs_audio_hw_config:s0", genfs_txt)
+
+        media_te = re.sub(r"#.*", "", (VENDOR / "vendor_hal_hisi_media_default.te").read_text())
+        self.assertIn("hal_server_domain(vendor_hal_hisi_media_default, vendor_hal_hisi_display)", media_te)
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        for needle in (
+            "ion_device:chr_file r_file_perms",
+            "hal_client_domain(hal_camera_default, vendor_hal_hisi_display)",
+            "hal_sensors_default sensors_device:chr_file rw_file_perms",
+            "r_dir_file(hal_audio_default, sysfs_audio_hw_config)",
+            "hal_audio_default self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl",
+        ):
+            self.assertIn(needle, clients_te)
+
 
 if __name__ == "__main__":
     unittest.main()

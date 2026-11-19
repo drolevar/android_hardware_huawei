@@ -10,6 +10,7 @@ get_prop(hal_gatekeeper_default, logd_prop)
 # Xcollie vendor property for libxcollie.so-linked Kirin HALs
 set_prop({
     hal_keymaster_default
+    hal_camera_default
     hal_graphics_composer_default
     hal_audio_default
     hal_bluetooth_default
@@ -39,15 +40,38 @@ vndbinder_use(hal_graphics_composer_default)
 vndbinder_use(vendor_hal_hisi_display_default)
 vndbinder_use(vendor_hal_hisi_media_default)
 
+# Legacy ION compatibility (Android 17 plat_sepolicy dropped ion_device in favor of dmabuf_system_heap_device)
+allow {
+    appdomain
+    -isolated_app_all
+} ion_device:chr_file r_file_perms;
+allow {
+    bootanim
+    cameraserver
+    hal_camera_default
+    hal_sensors_default
+    isolated_compute_app
+    mediacodec
+    mediaserver
+    mediaswcodec
+    mediatranscoding
+    surfaceflinger
+    system_server
+    zygote
+} ion_device:chr_file r_file_perms;
+
 hal_client_domain(hal_graphics_composer_default, vendor_hal_hisi_display)
 hal_client_domain(hal_graphics_composer_default, vendor_hal_hisi_perf)
+hal_client_domain(mediacodec, vendor_hal_hisi_display)
+hal_client_domain(hal_camera_default, vendor_hal_hisi_display)
+hal_client_domain(hal_camera_default, vendor_hal_hisi_perf)
 
 allow {
     hal_graphics_composer_default
     vendor_hal_hisi_display_default
     vendor_hal_hisi_media_default
 } { graphics_device gpu_device ion_device }:chr_file rw_file_perms;
-allow { hal_graphics_composer_default vendor_hal_hisi_display_default } graphics_device:dir search;
+allow { hal_graphics_composer_default vendor_hal_hisi_display_default vendor_hal_hisi_media_default } graphics_device:dir search;
 allow vendor_hal_hisi_media_default {
     vendor_jpu_device
     vendor_vdec_device
@@ -55,7 +79,7 @@ allow vendor_hal_hisi_media_default {
     vendor_cambuf_device
 }:chr_file rw_file_perms;
 
-allow { hal_graphics_composer_default vendor_hal_hisi_display_default } sysfs_framebuffer:dir r_dir_perms;
+r_dir_file({ hal_graphics_composer_default vendor_hal_hisi_display_default }, sysfs_framebuffer)
 allow { hal_graphics_composer_default vendor_hal_hisi_display_default } sysfs_framebuffer:file rw_file_perms;
 allow { hal_graphics_composer_default vendor_hal_hisi_display_default } {
     vendor_hwcdump_data_file
@@ -112,3 +136,38 @@ allow { hal_power_default vendor_hal_hisi_perf_default } {
     sysfs_devfreq_cur
     sysfs_devfreq_dir
 }:file rw_file_perms;
+
+# Camera HAL (CameraDaemon)
+allow hal_camera_default self:process execmem;
+allow hal_camera_default graphics_device:dir search;
+allow hal_camera_default {
+    graphics_device
+    vendor_cambuf_device
+    vendor_fd_device
+    vendor_ipu_device
+    vendor_ivp_device
+    vendor_jpu_device
+}:chr_file rw_file_perms;
+allow hal_camera_default {
+    vendor_dmd_device
+    vendor_hwlog_device
+}:chr_file { getattr open write };
+allow hal_camera_default { cameraserver system_server hal_graphics_composer_default }:fd use;
+r_dir_file(hal_camera_default, sysfs_pg)
+allow hal_camera_default sysfs_pg:file w_file_perms;
+get_prop(hal_camera_default, logd_prop)
+
+# Sensors HAL (sensorhub)
+allow hal_sensors_default sensors_device:chr_file rw_file_perms;
+allow hal_sensors_default input_device:dir r_dir_perms;
+allow hal_sensors_default input_device:chr_file r_file_perms;
+allow hal_sensors_default vendor_logcat_data_file:dir create_dir_perms;
+allow hal_sensors_default vendor_logcat_data_file:file create_file_perms;
+
+# Audio HAL
+r_dir_file(hal_audio_default, sysfs_audio_hw_config)
+r_dir_file(hal_audio_default, sysfs_framebuffer)
+allow hal_audio_default self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
+allow hal_audio_default vendor_logcat_data_file:dir create_dir_perms;
+allow hal_audio_default vendor_logcat_data_file:file create_file_perms;
+dontaudit hal_audio_default { default_prop config_prop }:file r_file_perms;

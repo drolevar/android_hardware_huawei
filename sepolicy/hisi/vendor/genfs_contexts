@@ -1,0 +1,10 @@
+# Kirin 970 framebuffer & vsync sysfs nodes (/sys/devices/virtual/graphics/fb0..3)
+genfscon sysfs /devices/virtual/graphics/fb0 u:object_r:sysfs_framebuffer:s0
+genfscon sysfs /devices/virtual/graphics/fb1 u:object_r:sysfs_framebuffer:s0
+genfscon sysfs /devices/virtual/graphics/fb2 u:object_r:sysfs_framebuffer:s0
+genfscon sysfs /devices/virtual/graphics/fb3 u:object_r:sysfs_framebuffer:s0
+genfscon sysfs /class/graphics u:object_r:sysfs_framebuffer:s0
+
+# Kirin 970 audio hardware devicetree sysfs nodes
+genfscon sysfs /firmware/devicetree/base/audio_hw_config u:object_r:sysfs_audio_hw_config:s0
+genfscon sysfs /firmware/devicetree/base/smartpakit u:object_r:sysfs_audio_hw_config:s0
