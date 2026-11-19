@@ -129,6 +129,15 @@ allow hal_secure_element_default sysfs_hisee:dir r_dir_perms;
 allow hal_secure_element_default sysfs_hisee:file rw_file_perms;
 r_dir_file(hal_secure_element_default, hisee_data_file)
 r_dir_file(hal_secure_element_default, sysfs_nfc_power_writable)
+hal_client_domain(hal_secure_element_default, vendor_hal_hisi_libteec)
+hal_client_domain(hal_secure_element_default, hal_nfc)
+hal_client_domain(hal_nfc_default, hal_secure_element)
+allow hal_secure_element_default { nfc_device radio_device }:chr_file rw_file_perms;
+get_prop(hal_secure_element_default, vendor_rild_prop)
+
+# Thermal HAL
+r_dir_file(hal_thermal_default, { sysfs_thermal sysfs_pg })
+allow hal_thermal_default sysfs:dir r_dir_perms;
 
 # IR & Vibrator
 allow hal_ir_default vendor_irda_device:chr_file rw_file_perms;
@@ -178,10 +187,14 @@ allow hal_camera_default vendor_data_file:dir search;
 allow hal_camera_default { vendor_camera_data_file vendor_logcat_data_file }:dir create_dir_perms;
 allow hal_camera_default { vendor_camera_data_file vendor_logcat_data_file }:file create_file_perms;
 r_dir_file(hal_camera_default, { sysfs_pg sysfs_camerafs sysfs_huawei_sensor sysfs_leds sysfs_devfreq_dir })
+allow { hal_camera_default vendor_hal_hisi_hwfactoryinterface_default } sysfs_hisi_boardname:file r_file_perms;
+allow hal_camera_default { proc_hisi_ddr_info proc_meminfo }:file r_file_perms;
 allow hal_camera_default sysfs_pg:file w_file_perms;
 allow hal_camera_default { sysfs_camerafs sysfs_leds }:file rw_file_perms;
 get_prop(hal_camera_default, logd_prop)
 dontaudit hal_camera_default default_prop:file r_file_perms;
+dontaudit hal_camera_default config_prop:file r_file_perms;
+dontaudit hal_camera_default shell_data_file:dir search;
 set_prop(hal_camera_default, vendor_camera_prop)
 
 # Sensors HAL (sensorhub)

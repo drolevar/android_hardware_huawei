@@ -20,5 +20,7 @@ dontaudit rild { default_prop config_prop system_prop }:file r_file_perms;
 dontaudit rild shell_data_file:dir search;
 r_dir_file(rild, sysfs_sim_hotplug)
 allow rild sysfs_sim_hotplug:file rw_file_perms;
+r_dir_file(rild, sysfs_camerafs)
+allow rild sysfs_camerafs:file rw_file_perms;
 hal_client_domain(rild, vendor_hal_hisi_libteec)
 hal_client_domain(rild, vendor_hal_hisi_hwfactoryinterface)

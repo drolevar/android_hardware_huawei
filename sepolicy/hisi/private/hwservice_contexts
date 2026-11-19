@@ -17,6 +17,8 @@ vendor.huawei.hardware.hwfactoryinterface::IHwFactoryInterface              u:ob
 vendor.huawei.hardware.hwfs::IHwfs                                          u:object_r:vendor_hal_hisi_hwfs_hwservice:s0
 vendor.huawei.hardware.iawareperf::IUniPerf                                 u:object_r:vendor_hal_hisi_perf_hwservice:s0
 vendor.huawei.hardware.libteec::ILibteecGlobal                              u:object_r:vendor_hal_hisi_libteec_hwservice:s0
+vendor.huawei.hardware.nxpese::INxpEse                                      u:object_r:hal_secure_element_hwservice:s0
+vendor.huawei.hardware.nxpnfc::INxpNfc                                      u:object_r:hal_nfc_hwservice:s0
 vendor.huawei.hardware.otherdevices::IOtherdevices                          u:object_r:vendor_hal_hisi_otherdevices_hwservice:s0
 vendor.huawei.hardware.perfgenius::IPerfGenius                              u:object_r:vendor_hal_hisi_perf_hwservice:s0
 vendor.huawei.hardware.power::IHWPower                                      u:object_r:hal_power_hwservice:s0

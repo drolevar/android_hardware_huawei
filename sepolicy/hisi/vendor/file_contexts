@@ -108,6 +108,7 @@
 /mnt/hisee_fs(/.*)?                             u:object_r:hisee_data_file:s0
 /splash2(/.*)?                                  u:object_r:splashtwo_file:s0
 /vendor/modem/modem_fw(/.*)?                    u:object_r:modem_vendor_file:s0
+/(odm|vendor/odm)/etc/ncfg(/.*)?                u:object_r:modem_vendor_file:s0
 
 # TEE
 /sec_storage(/.*)?                              u:object_r:teecd_data_file:s0

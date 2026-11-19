@@ -47,4 +47,7 @@ genfscon sysfs /kernel/sim u:object_r:sysfs_sim_hotplug:s0
 genfscon sysfs /firmware/devicetree/base/bcm_wifi u:object_r:sysfs_hisi_connectivity:s0
 genfscon sysfs /firmware/devicetree/base/bcm_bt u:object_r:sysfs_hisi_connectivity:s0
 genfscon sysfs /firmware/devicetree/base/gps_power u:object_r:sysfs_hisi_connectivity:s0
+genfscon sysfs /firmware/devicetree/base/hisi,boardname u:object_r:sysfs_hisi_boardname:s0
+genfscon sysfs /firmware/devicetree/base/nfc_exist u:object_r:sysfs_hisee:s0
+genfscon proc /ddr_info u:object_r:proc_hisi_ddr_info:s0
 genfscon sysfs /devices/platform/amba/fdf0d000.i2c/i2c-4/4-0028 u:object_r:sysfs_nfc_power_writable:s0

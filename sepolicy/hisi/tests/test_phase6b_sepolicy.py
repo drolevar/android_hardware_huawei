@@ -479,6 +479,55 @@ class Phase6BSepolicyTests(unittest.TestCase):
         kernel_te = re.sub(r"#.*", "", (VENDOR / "kernel.te").read_text())
         self.assertIn("allow kernel vendor_fw_block_device:blk_file r_file_perms;", kernel_te)
 
+    def test_attempt10_camera_se_ril_thermal_sepolicy_closure(self):
+        decls = load_type_declarations()
+        self.assertIn("sysfs_type", decls["sysfs_hisi_boardname"])
+        self.assertIn("proc_type", decls["proc_hisi_ddr_info"])
+
+        rules = load_file_contexts()
+        self.assertEqual(resolve_type(rules, "/odm/etc/ncfg/COMMON.bin"), "modem_vendor_file")
+
+        genfs_txt = (VENDOR / "genfs_contexts").read_text()
+        for needle in (
+            "genfscon sysfs /firmware/devicetree/base/hisi,boardname u:object_r:sysfs_hisi_boardname:s0",
+            "genfscon sysfs /firmware/devicetree/base/nfc_exist u:object_r:sysfs_hisee:s0",
+            "genfscon proc /ddr_info u:object_r:proc_hisi_ddr_info:s0",
+        ):
+            self.assertIn(needle, genfs_txt)
+
+        hwsvc_txt = (POLICY / "private/hwservice_contexts").read_text()
+        self.assertIn(
+            "vendor.huawei.hardware.nxpese::INxpEse                                      u:object_r:hal_secure_element_hwservice:s0",
+            hwsvc_txt,
+        )
+        self.assertIn(
+            "vendor.huawei.hardware.nxpnfc::INxpNfc                                      u:object_r:hal_nfc_hwservice:s0",
+            hwsvc_txt,
+        )
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        for needle in (
+            "hal_client_domain(hal_secure_element_default, vendor_hal_hisi_libteec)",
+            "hal_client_domain(hal_secure_element_default, hal_nfc)",
+            "hal_client_domain(hal_nfc_default, hal_secure_element)",
+            "allow hal_secure_element_default { nfc_device radio_device }:chr_file rw_file_perms;",
+            "get_prop(hal_secure_element_default, vendor_rild_prop)",
+            "r_dir_file(hal_thermal_default, { sysfs_thermal sysfs_pg })",
+            "allow hal_thermal_default sysfs:dir r_dir_perms;",
+            "allow { hal_camera_default vendor_hal_hisi_hwfactoryinterface_default } sysfs_hisi_boardname:file r_file_perms;",
+            "allow hal_camera_default { proc_hisi_ddr_info proc_meminfo }:file r_file_perms;",
+            "dontaudit hal_camera_default config_prop:file r_file_perms;",
+            "dontaudit hal_camera_default shell_data_file:dir search;",
+        ):
+            self.assertIn(needle, clients_te)
+
+        rild_te = re.sub(r"#.*", "", (VENDOR / "rild.te").read_text())
+        for needle in (
+            "r_dir_file(rild, sysfs_camerafs)",
+            "allow rild sysfs_camerafs:file rw_file_perms;",
+        ):
+            self.assertIn(needle, rild_te)
+
 
 if __name__ == "__main__":
     unittest.main()
