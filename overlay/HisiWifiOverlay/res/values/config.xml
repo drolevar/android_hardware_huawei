@@ -33,4 +33,8 @@
          immediately after the country code is sent to the driver (if the method returns a
          success). -->
     <bool name="config_wifiDriverSupportedNl80211RegChangedEvent">true</bool>
+
+    <!-- Allow STA country code updates (e.g. Airplane Mode -> Cellular) without forcing
+         framework-initiated STA disconnection when the current channel remains valid. -->
+    <bool name="config_wifiStaDynamicCountryCodeUpdateSupported">true</bool>
 </resources>
