@@ -136,6 +136,9 @@ public class LegacyNetworkFactory extends Handler {
             Log.w(mLogTag, "Failed to unregister VoWiFi NetworkProvider", t);
         }
         mRegistered = false;
+        if (sLatestProvider == mProvider) {
+            sLatestProvider = null;
+        }
         mActiveRequests.clear();
     }
 

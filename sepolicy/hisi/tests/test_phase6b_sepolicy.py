@@ -636,7 +636,7 @@ class Phase6BSepolicyTests(unittest.TestCase):
         for needle in (
             "hal_server_domain(iked, hal_telephony)",
             "net_domain(iked)",
-            "allow iked self:key_socket create_stream_socket_perms;",
+            "allow iked self:key_socket create_socket_perms_no_ioctl;",
             "allow iked self:netlink_xfrm_socket { create_socket_perms_no_ioctl nlmsg_read nlmsg_write };",
             "allow netutils_wrapper iked:fd use;",
         ):

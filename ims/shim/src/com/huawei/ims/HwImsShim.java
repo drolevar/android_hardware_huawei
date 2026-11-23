@@ -62,6 +62,8 @@ public final class HwImsShim {
     private static final String HW_RADIO_V2_0 = "vendor.huawei.hardware.radio@2.0::IRadio";
     private static final String DUAL_SIM_COORD_PROP =
             "com.huawei.ims.dualsim_coordinator_registered";
+    private static final String DESIRED_IMS_SWITCH_PROP_PREFIX =
+            "com.huawei.ims.desired_switch.slot";
     private static final int TRANSACTION_SET_IMS_SWITCH = 4;
     private static final long DDS_ASSIGN_DEBOUNCE_MS = 2_000L;
     private static final long RADIO_POWER_DEBOUNCE_MS = 3_000L;
@@ -513,6 +515,10 @@ public final class HwImsShim {
     }
 
     static void resetSwitchStateForTest() {
+        synchronized (System.getProperties()) {
+            System.getProperties().remove(DESIRED_IMS_SWITCH_PROP_PREFIX + "0");
+            System.getProperties().remove(DESIRED_IMS_SWITCH_PROP_PREFIX + "1");
+        }
         for (int slotId = 0; slotId <= 1; slotId++) {
             synchronized (SLOT_LOCKS[slotId]) {
                 DESIRED_IMS_SWITCH[slotId] = -1;
@@ -530,6 +536,10 @@ public final class HwImsShim {
     private static void setModemImsSwitchAsync(final int slotId, final int state) {
         if (slotId < 0 || slotId > 1) {
             return;
+        }
+        synchronized (System.getProperties()) {
+            System.getProperties()
+                    .setProperty(DESIRED_IMS_SWITCH_PROP_PREFIX + slotId, Integer.toString(state));
         }
         synchronized (SLOT_LOCKS[slotId]) {
             DESIRED_IMS_SWITCH[slotId] = state;
@@ -609,7 +619,7 @@ public final class HwImsShim {
         HwParcel req = new HwParcel();
         HwParcel reply = new HwParcel();
         try {
-            IHwBinder binder = HwBinder.getService(HW_RADIO_V2_0, slotService, true);
+            IHwBinder binder = HwBinder.getService(HW_RADIO_V2_0, slotService, false);
             if (binder == null) {
                 return false;
             }
@@ -744,6 +754,16 @@ public final class HwImsShim {
                 if (DESIRED_IMS_SWITCH[slotId] >= 0) {
                     return DESIRED_IMS_SWITCH[slotId] == 1;
                 }
+            }
+            String sharedVal;
+            synchronized (System.getProperties()) {
+                sharedVal = System.getProperties().getProperty(DESIRED_IMS_SWITCH_PROP_PREFIX + slotId);
+            }
+            if ("1".equals(sharedVal)) {
+                return true;
+            }
+            if ("0".equals(sharedVal)) {
+                return false;
             }
         } else {
             slotId = 0;

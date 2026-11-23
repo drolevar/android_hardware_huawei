@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
@@ -55,7 +56,14 @@ public final class HisiRadioBridge {
             "vendor.huawei.hardware.hisiradio@1.2::IHisiRadioIndication";
     private static final String IFACE_HISI_RADIO_IND_1_3 =
             "vendor.huawei.hardware.hisiradio@1.3::IHisiRadioIndication";
+    private static final String IFACE_SERVICE_MANAGER_1_0 =
+            "android.hidl.manager@1.0::IServiceManager";
+    private static final String IFACE_SERVICE_NOTIFICATION_1_0 =
+            "android.hidl.manager@1.0::IServiceNotification";
     private static final String IFACE_IBASE = "android.hidl.base@1.0::IBase";
+
+    private static final int TX_SM_REGISTER_FOR_NOTIFICATIONS = 6;
+    private static final int TX_SN_ON_REGISTRATION = 1;
 
     // IHisiRadio@1.0 request transaction codes (verified via REA/IDA on hisiradio@1.0.so)
     private static final int TX_SET_RESPONSE_FUNCTIONS = 1;
@@ -84,6 +92,13 @@ public final class HisiRadioBridge {
     private static final long UICC_AUTH_TIMEOUT_MS = 8000L;
     private static final long GET_IMS_DOMAIN_TIMEOUT_MS = 2000L;
 
+    interface HwServiceGetter {
+        IHwBinder getService(String iface, String name, boolean retry) throws RemoteException;
+    }
+
+    static volatile HwServiceGetter sServiceGetter = HwBinder::getService;
+    static volatile long sReconnectInitialDelayMs = 250L;
+
     private static final class Holder {
         static final HisiRadioBridge INSTANCE = new HisiRadioBridge();
     }
@@ -92,6 +107,7 @@ public final class HisiRadioBridge {
         final int phoneId;
         final IPhoneCallback callback;
         final int events;
+        final AtomicBoolean notifiedAvailable = new AtomicBoolean(false);
 
         ListenerEntry(int phoneId, IPhoneCallback callback, int events) {
             this.phoneId = phoneId;
@@ -112,9 +128,14 @@ public final class HisiRadioBridge {
 
     private final AtomicInteger mSerialGen = new AtomicInteger(20000);
     private final Object[] mSlotLocks = {new Object(), new Object()};
+    private final Object[] mReconnectLocks = {new Object(), new Object()};
+    private final boolean[] mReconnectWorkerActive = {false, false};
+    private final boolean[] mReconnectRequested = {false, false};
+    private final boolean[] mNotifRegistered = {false, false};
     private final IHwBinder[] mRadioBinders = new IHwBinder[2];
     private final ResponseStub[] mResponseStubs = new ResponseStub[2];
     private final IndicationStub[] mIndicationStubs = new IndicationStub[2];
+    private final ServiceNotificationStub[] mNotificationStubs = new ServiceNotificationStub[2];
     private final AtomicIntegerArray mCachedImsDomain = new AtomicIntegerArray(new int[] {0, 0});
     private final List<ListenerEntry> mListeners = new CopyOnWriteArrayList<>();
     private final Map<Integer, PendingAuth> mPendingAuths = new ConcurrentHashMap<>();
@@ -130,10 +151,40 @@ public final class HisiRadioBridge {
         return phoneId == 0 || phoneId == 1;
     }
 
+    private boolean isSlotConnected(int phoneId) {
+        synchronized (mSlotLocks[phoneId]) {
+            return mRadioBinders[phoneId] != null;
+        }
+    }
+
+    private boolean hasListenersForSlot(int phoneId) {
+        for (ListenerEntry entry : mListeners) {
+            if (entry.phoneId == phoneId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void resetForTest() {
+        mListeners.clear();
+        for (int i = 0; i <= 1; i++) {
+            synchronized (mSlotLocks[i]) {
+                mRadioBinders[i] = null;
+            }
+            synchronized (mReconnectLocks[i]) {
+                mNotifRegistered[i] = false;
+                mReconnectRequested[i] = false;
+            }
+        }
+    }
+
     private IHwBinder ensureSlotConnected(final int phoneId) {
         if (!isValidSlot(phoneId)) {
             return null;
         }
+        IHwBinder connectedBinder = null;
+        boolean newlyConnected = false;
         synchronized (mSlotLocks[phoneId]) {
             if (mRadioBinders[phoneId] != null) {
                 return mRadioBinders[phoneId];
@@ -148,7 +199,8 @@ public final class HisiRadioBridge {
             HwParcel req = new HwParcel();
             HwParcel reply = new HwParcel();
             try {
-                IHwBinder binder = HwBinder.getService(IFACE_HISI_RADIO_1_0, svcName, true);
+                // Non-blocking lookup (retry=false) so com.android.phone main thread never stalls.
+                IHwBinder binder = sServiceGetter.getService(IFACE_HISI_RADIO_1_0, svcName, false);
                 if (binder == null) {
                     return null;
                 }
@@ -159,19 +211,29 @@ public final class HisiRadioBridge {
                 reply.verifySuccess();
                 req.releaseTemporaryStorage();
 
+                final IHwBinder boundBinder = binder;
                 final long cookie = phoneId + 1L;
                 binder.linkToDeath(
                         serviceCookie -> {
+                            boolean cleared = false;
                             synchronized (mSlotLocks[phoneId]) {
-                                mRadioBinders[phoneId] = null;
+                                if (mRadioBinders[phoneId] == boundBinder) {
+                                    mRadioBinders[phoneId] = null;
+                                    cleared = true;
+                                }
                             }
-                            notifyRadioEvent(phoneId, PHONE_EVENT_RADIO_UNAVAILABLE);
+                            if (cleared) {
+                                notifyRadioEvent(phoneId, PHONE_EVENT_RADIO_UNAVAILABLE);
+                                if (hasListenersForSlot(phoneId)) {
+                                    scheduleReconnect(phoneId);
+                                }
+                            }
                         },
                         cookie);
                 mRadioBinders[phoneId] = binder;
+                connectedBinder = binder;
+                newlyConnected = true;
                 Log.i(TAG, "Bound IHisiRadio " + svcName + " callbacks");
-                notifyRadioEvent(phoneId, PHONE_EVENT_RADIO_AVAILABLE);
-                return binder;
             } catch (Throwable t) {
                 Log.w(TAG, "Unable to bind IHisiRadio " + svcName + ": " + t);
                 return null;
@@ -182,20 +244,138 @@ public final class HisiRadioBridge {
                 }
             }
         }
+        if (newlyConnected) {
+            notifyRadioEvent(phoneId, PHONE_EVENT_RADIO_AVAILABLE);
+        }
+        return connectedBinder;
+    }
+
+    private void ensureServiceNotificationRegistered(final int phoneId) {
+        synchronized (mReconnectLocks[phoneId]) {
+            if (mNotifRegistered[phoneId]) {
+                return;
+            }
+            if (mNotificationStubs[phoneId] == null) {
+                mNotificationStubs[phoneId] = new ServiceNotificationStub(phoneId);
+            }
+        }
+        final String svcName = (phoneId == 0) ? "slot1" : "slot2";
+        HwParcel req = new HwParcel();
+        HwParcel reply = new HwParcel();
+        try {
+            IHwBinder smBinder =
+                    sServiceGetter.getService(IFACE_SERVICE_MANAGER_1_0, "default", false);
+            if (smBinder == null) {
+                return;
+            }
+            req.writeInterfaceToken(IFACE_SERVICE_MANAGER_1_0);
+            req.writeString(IFACE_HISI_RADIO_1_0);
+            req.writeString(svcName);
+            req.writeStrongBinder(mNotificationStubs[phoneId]);
+            smBinder.transact(TX_SM_REGISTER_FOR_NOTIFICATIONS, req, reply, 0);
+            reply.verifySuccess();
+            req.releaseTemporaryStorage();
+            if (reply.readBool()) {
+                synchronized (mReconnectLocks[phoneId]) {
+                    mNotifRegistered[phoneId] = true;
+                }
+                smBinder.linkToDeath(
+                        cookie -> {
+                            synchronized (mReconnectLocks[phoneId]) {
+                                mNotifRegistered[phoneId] = false;
+                            }
+                            if (hasListenersForSlot(phoneId)) {
+                                scheduleReconnect(phoneId);
+                            }
+                        },
+                        100L + phoneId);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Unable to register IHisiRadio service notification for " + svcName + ": " + t);
+        } finally {
+            try {
+                reply.release();
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    private void scheduleReconnect(final int phoneId) {
+        if (!isValidSlot(phoneId)) {
+            return;
+        }
+        synchronized (mReconnectLocks[phoneId]) {
+            mReconnectRequested[phoneId] = true;
+            if (mReconnectWorkerActive[phoneId]) {
+                return;
+            }
+            mReconnectWorkerActive[phoneId] = true;
+        }
+        final String svcName = (phoneId == 0) ? "slot1" : "slot2";
+        Thread worker =
+                new Thread(
+                        () -> {
+                            boolean ownsActive = true;
+                            try {
+                                while (true) {
+                                    synchronized (mReconnectLocks[phoneId]) {
+                                        mReconnectRequested[phoneId] = false;
+                                    }
+                                    ensureServiceNotificationRegistered(phoneId);
+                                    if (hasListenersForSlot(phoneId) && !isSlotConnected(phoneId)) {
+                                        long delayMs = sReconnectInitialDelayMs;
+                                        for (int attempt = 1; attempt <= 12; attempt++) {
+                                            if (!hasListenersForSlot(phoneId)
+                                                    || ensureSlotConnected(phoneId) != null) {
+                                                break;
+                                            }
+                                            ensureServiceNotificationRegistered(phoneId);
+                                            try {
+                                                Thread.sleep(delayMs);
+                                            } catch (InterruptedException e) {
+                                                Thread.currentThread().interrupt();
+                                                return;
+                                            }
+                                            delayMs = Math.min(delayMs * 2L, 4000L);
+                                        }
+                                    }
+                                    synchronized (mReconnectLocks[phoneId]) {
+                                        if (!mReconnectRequested[phoneId]) {
+                                            mReconnectWorkerActive[phoneId] = false;
+                                            ownsActive = false;
+                                            return;
+                                        }
+                                    }
+                                }
+                            } finally {
+                                if (ownsActive) {
+                                    synchronized (mReconnectLocks[phoneId]) {
+                                        mReconnectWorkerActive[phoneId] = false;
+                                    }
+                                }
+                            }
+                        },
+                        "HisiRadioReconnect-" + svcName);
+        worker.setDaemon(true);
+        worker.start();
     }
 
     public boolean registerForPhoneEvent(int phoneId, IPhoneCallback callback, int events) {
         if (!isValidSlot(phoneId) || callback == null || events == 0) {
             return false;
         }
-        mListeners.add(new ListenerEntry(phoneId, callback, events));
+        ListenerEntry entry = new ListenerEntry(phoneId, callback, events);
+        mListeners.add(entry);
         IHwBinder binder = ensureSlotConnected(phoneId);
-        if ((events & PHONE_EVENT_RADIO_AVAILABLE) != 0 && binder != null) {
-            try {
-                callback.onCallback1(phoneId);
-            } catch (RemoteException ignored) {
+        if (binder != null && (events & PHONE_EVENT_RADIO_AVAILABLE) != 0) {
+            if (entry.notifiedAvailable.compareAndSet(false, true)) {
+                try {
+                    callback.onCallback1(phoneId);
+                } catch (RemoteException ignored) {
+                }
             }
         }
+        scheduleReconnect(phoneId);
         return true;
     }
 
@@ -212,10 +392,24 @@ public final class HisiRadioBridge {
 
     private void notifyRadioEvent(int phoneId, int eventBit) {
         for (ListenerEntry entry : mListeners) {
-            if (entry.phoneId == phoneId && (entry.events & eventBit) != 0) {
-                try {
-                    entry.callback.onCallback1(phoneId);
-                } catch (RemoteException ignored) {
+            if (entry.phoneId != phoneId) {
+                continue;
+            }
+            if (eventBit == PHONE_EVENT_RADIO_UNAVAILABLE) {
+                entry.notifiedAvailable.set(false);
+                if ((entry.events & PHONE_EVENT_RADIO_UNAVAILABLE) != 0) {
+                    try {
+                        entry.callback.onCallback1(phoneId);
+                    } catch (RemoteException ignored) {
+                    }
+                }
+            } else if (eventBit == PHONE_EVENT_RADIO_AVAILABLE) {
+                if ((entry.events & PHONE_EVENT_RADIO_AVAILABLE) != 0
+                        && entry.notifiedAvailable.compareAndSet(false, true)) {
+                    try {
+                        entry.callback.onCallback1(phoneId);
+                    } catch (RemoteException ignored) {
+                    }
                 }
             }
         }
@@ -652,6 +846,53 @@ public final class HisiRadioBridge {
                     bytes[i] = b != null ? b : 0;
                 }
                 notifyImsaToMapcon(mPhoneId, bytes);
+                return;
+            }
+            if ((flags & IBinder.FLAG_ONEWAY) == 0) {
+                reply.writeStatus(HwParcel.STATUS_SUCCESS);
+                reply.send();
+            }
+        }
+    }
+
+    private final class ServiceNotificationStub extends HwBinder {
+        private final int mPhoneId;
+        private final ArrayList<String> mChain =
+                new ArrayList<>(Arrays.asList(IFACE_SERVICE_NOTIFICATION_1_0, IFACE_IBASE));
+
+        ServiceNotificationStub(int phoneId) {
+            mPhoneId = phoneId;
+        }
+
+        @Override
+        public android.os.IHwInterface queryLocalInterface(String descriptor) {
+            return null;
+        }
+
+        @Override
+        public boolean linkToDeath(DeathRecipient recipient, long cookie) {
+            return true;
+        }
+
+        @Override
+        public boolean unlinkToDeath(DeathRecipient recipient) {
+            return true;
+        }
+
+        @Override
+        public void onTransact(int code, HwParcel data, HwParcel reply, int flags)
+                throws RemoteException {
+            if (handleHidlBaseMeta(code, data, reply, mChain)) {
+                return;
+            }
+            if (code == TX_SN_ON_REGISTRATION) {
+                data.enforceInterface(IFACE_SERVICE_NOTIFICATION_1_0);
+                data.readString(); // fqName
+                data.readString(); // name
+                data.readBool(); // preexisting
+                if (hasListenersForSlot(mPhoneId)) {
+                    scheduleReconnect(mPhoneId);
+                }
                 return;
             }
             if ((flags & IBinder.FLAG_ONEWAY) == 0) {

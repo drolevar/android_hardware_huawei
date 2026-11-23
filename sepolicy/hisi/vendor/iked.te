@@ -14,7 +14,7 @@ allow iked self:global_capability_class_set {
     sys_admin
     sys_resource
 };
-allow iked self:key_socket create_stream_socket_perms;
+allow iked self:key_socket create_socket_perms_no_ioctl;
 allow iked self:netlink_xfrm_socket { create_socket_perms_no_ioctl nlmsg_read nlmsg_write };
 allow iked self:netlink_route_socket { nlmsg_read nlmsg_write };
 allow iked kernel:system module_request;
