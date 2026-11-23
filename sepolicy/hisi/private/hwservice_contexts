@@ -7,6 +7,7 @@ vendor.huawei.hardware.camera.vircamera::IVirCameraChannel                  u:ob
 vendor.huawei.hardware.gnss::IHWGnss                                        u:object_r:hal_gnss_hwservice:s0
 vendor.huawei.hardware.graphics.displayeffect::IEffect                      u:object_r:vendor_hal_hisi_display_hwservice:s0
 vendor.huawei.hardware.graphics.mediacomm::IMediaComm                       u:object_r:vendor_hal_hisi_display_hwservice:s0
+vendor.huawei.hardware.hinetmanager::IHinetmanagerDevice                    u:object_r:hal_telephony_hwservice:s0
 vendor.huawei.hardware.hisiradio::IHisiRadio                                u:object_r:hal_telephony_hwservice:s0
 vendor.huawei.hardware.hisupl::ISuplclienttoserverInterface                 u:object_r:hal_gnss_hwservice:s0
 vendor.huawei.hardware.huaweiantitheft::IHuaweiAntiTheft                    u:object_r:vendor_hal_hisi_antitheft_hwservice:s0
@@ -16,6 +17,7 @@ vendor.huawei.hardware.hwdisplay.displayengine::IDisplayEngineWrapper       u:ob
 vendor.huawei.hardware.hwfactoryinterface::IHwFactoryInterface              u:object_r:vendor_hal_hisi_hwfactoryinterface_hwservice:s0
 vendor.huawei.hardware.hwfs::IHwfs                                          u:object_r:vendor_hal_hisi_hwfs_hwservice:s0
 vendor.huawei.hardware.iawareperf::IUniPerf                                 u:object_r:vendor_hal_hisi_perf_hwservice:s0
+vendor.huawei.hardware.iked::IIkedDevice                                    u:object_r:hal_telephony_hwservice:s0
 vendor.huawei.hardware.libteec::ILibteecGlobal                              u:object_r:vendor_hal_hisi_libteec_hwservice:s0
 vendor.huawei.hardware.nxpese::INxpEse                                      u:object_r:hal_secure_element_hwservice:s0
 vendor.huawei.hardware.nxpnfc::INxpNfc                                      u:object_r:hal_nfc_hwservice:s0
@@ -28,3 +30,5 @@ vendor.huawei.hardware.radio.deprecated::IOemHook                           u:ob
 vendor.huawei.hardware.radio.ims::IRadioIms                                 u:object_r:hal_telephony_hwservice:s0
 vendor.huawei.hardware.sensors::ISensors                                    u:object_r:hal_sensors_hwservice:s0
 vendor.huawei.hardware.tp::ITouchscreen                                     u:object_r:vendor_hal_hisi_touchscreen_hwservice:s0
+vendor.huawei.hardware.vpeer.p2ptransport::IP2pTransport                    u:object_r:hal_telephony_hwservice:s0
+vendor.huawei.hardware.vpeer.p2ptransport::IP2pTransportAdapter             u:object_r:hal_telephony_hwservice:s0

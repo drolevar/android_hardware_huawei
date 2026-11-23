@@ -1,0 +1,2 @@
+# Huawei IMS (com.huawei.ims running in android.uid.phone / radio domain)
+get_prop(radio, telephony_config_prop)

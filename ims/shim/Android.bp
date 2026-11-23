@@ -1,0 +1,19 @@
+//
+// SPDX-FileCopyrightText: The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+java_library {
+    name: "huawei-ims-shim",
+    installable: false,
+    platform_apis: true,
+    srcs: [
+        "src/**/*.java",
+    ],
+    libs: [
+        "framework-connectivity.stubs.module_lib",
+        "ims-common",
+        "telephony-common",
+        "voip-common",
+    ],
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Bind Huawei Kirin 970 MMTEL ImsService (com.huawei.ims/.HwImsService) by default -->
+    <string name="config_ims_mmtel_package" translatable="false">com.huawei.ims</string>
+</resources>

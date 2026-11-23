@@ -4,6 +4,8 @@
 #
 
 PRODUCT_PACKAGES += \
+    HisiCarrierConfigOverlay \
     HisiFrameworkOverlay \
     HisiSystemUIOverlay \
+    HisiTelephonyOverlay \
     HisiWifiOverlay

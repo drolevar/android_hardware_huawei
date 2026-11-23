@@ -532,6 +532,54 @@ class Phase6BSepolicyTests(unittest.TestCase):
         ):
             self.assertIn(needle, rild_te)
 
+    def test_attempt12_ims_sepolicy_overlays_and_shim(self):
+        hw_root = POLICY.parents[1]
+        priv_svc_ctx = [
+            line.split()
+            for line in (POLICY / "private/service_contexts").read_text().splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        self.assertIn(["ims_config", "u:object_r:radio_service:s0"], priv_svc_ctx)
+        self.assertIn(["ims_ut", "u:object_r:radio_service:s0"], priv_svc_ctx)
+
+        radio_te = re.sub(r"#.*", "", (POLICY / "private/radio.te").read_text())
+        self.assertIn("get_prop(radio, telephony_config_prop)", radio_te)
+        self.assertNotIn("default_android_service", radio_te)
+        self.assertNotIn("default_android_hwservice", radio_te)
+
+        hwsvc_txt = (POLICY / "private/hwservice_contexts").read_text()
+        for iface in (
+            "vendor.huawei.hardware.hinetmanager::IHinetmanagerDevice",
+            "vendor.huawei.hardware.iked::IIkedDevice",
+            "vendor.huawei.hardware.vpeer.p2ptransport::IP2pTransport",
+            "vendor.huawei.hardware.vpeer.p2ptransport::IP2pTransportAdapter",
+        ):
+            self.assertIn(iface, hwsvc_txt)
+
+        priv_prop_ctx = (POLICY / "private/property_contexts").read_text()
+        for prop_key in (
+            "ro.config.hw_volte_dyn",
+            "ro.config.hw_ut_ims",
+            "ro.hw.country",
+            "persist.ims.",
+            "persist.ut.",
+        ):
+            self.assertIn(prop_key, priv_prop_ctx)
+
+        hisi_mk = (hw_root / "overlay/hisi.mk").read_text()
+        self.assertIn("HisiTelephonyOverlay", hisi_mk)
+        self.assertIn("HisiCarrierConfigOverlay", hisi_mk)
+        tel_cfg = (hw_root / "overlay/HisiTelephonyOverlay/res/values/config.xml").read_text()
+        self.assertIn('<string name="config_ims_mmtel_package" translatable="false">com.huawei.ims</string>', tel_cfg)
+        cc_xml = (hw_root / "overlay/HisiCarrierConfigOverlay/res/xml/vendor.xml").read_text()
+        self.assertIn('name="carrier_volte_available_bool" value="true"', cc_xml)
+        self.assertIn('name="carrier_volte_roaming_available_bool" value="true"', cc_xml)
+        self.assertIn('<string name="config_ims_mmtel_package_override_string">com.huawei.ims</string>', cc_xml)
+
+        shim_java = (hw_root / "ims/shim/src/com/huawei/ims/HwImsShim.java").read_text()
+        self.assertIn('vendor.huawei.hardware.radio@2.0::IRadio', shim_java)
+        self.assertIn('TRANSACTION_SET_IMS_SWITCH = 4', shim_java)
+
 
 if __name__ == "__main__":
     unittest.main()

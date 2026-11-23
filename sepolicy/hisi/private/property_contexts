@@ -38,3 +38,23 @@ ro.config.power                  u:object_r:telephony_config_prop:s0 exact strin
 ro.config.sup_lte_high_speed     u:object_r:telephony_config_prop:s0 exact string
 ro.config.support_wcdma_modem1   u:object_r:telephony_config_prop:s0 exact string
 ro.config.wps_enabled            u:object_r:telephony_config_prop:s0 exact string
+ro.config.amr_wb_show_hd_volte   u:object_r:telephony_config_prop:s0 exact string
+ro.config.cmcc.volteencrypt      u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_att_wificall        u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_cdma_volte_isim     u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_cmcciot             u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_support_omadm       u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_ut_ims              u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_vilte_enhancement   u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_volte_dyn           u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_vowifi_mmsut        u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_vtlte_on            u:object_r:telephony_config_prop:s0 exact string
+ro.config.phoneland              u:object_r:telephony_config_prop:s0 exact string
+ro.config.vt_flow_info           u:object_r:telephony_config_prop:s0 exact string
+ro.hw.country                    u:object_r:telephony_config_prop:s0 exact string
+ro.hw.oemName                    u:object_r:telephony_config_prop:s0 exact string
+ro.huawei.build.display.id       u:object_r:telephony_config_prop:s0 exact string
+ro.huawei.build.version.incremental u:object_r:telephony_config_prop:s0 exact string
+ro.vowifi.wifi_only_fall_cs      u:object_r:telephony_config_prop:s0 exact string
+persist.ims.                     u:object_r:radio_prop:s0
+persist.ut.                      u:object_r:radio_prop:s0
