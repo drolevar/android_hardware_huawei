@@ -11,6 +11,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
@@ -55,6 +58,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
 public final class HwImsShim {
     interface ImsSwitchSender {
@@ -1146,5 +1150,64 @@ public final class HwImsShim {
             }
         }
         targetTm.listen(listener, events);
+    }
+
+    static volatile IntUnaryOperator sSlotIndexResolver = SubscriptionManager::getSlotIndex;
+
+    public static String getNetworkCountryIsoForSubId(TelephonyManager tm, int subId) {
+        if (tm == null) {
+            return "";
+        }
+        try {
+            if (subId == SubscriptionManager.DEFAULT_SUBSCRIPTION_ID) {
+                String iso = tm.getNetworkCountryIso();
+                return iso != null ? iso : "";
+            }
+            int slotIndex = sSlotIndexResolver.applyAsInt(subId);
+            if (slotIndex < 0) {
+                return "";
+            }
+            String iso = tm.getNetworkCountryIso(slotIndex);
+            return iso != null ? iso : "";
+        } catch (Throwable t) {
+            Log.w(TAG, "getNetworkCountryIsoForSubId failed for subId=" + subId, t);
+            return "";
+        }
+    }
+
+    public static void requestLocationUpdatesSafe(
+            LocationManager lm,
+            String provider,
+            long minTimeMs,
+            float minDistanceM,
+            LocationListener listener) {
+        if (lm == null || provider == null || provider.isEmpty() || listener == null) {
+            return;
+        }
+        try {
+            List<String> providers = lm.getAllProviders();
+            if (providers == null || !providers.contains(provider)) {
+                return;
+            }
+            lm.requestLocationUpdates(provider, minTimeMs, minDistanceM, listener);
+        } catch (Throwable t) {
+            Log.w(TAG, "requestLocationUpdatesSafe skipped for provider=" + provider, t);
+        }
+    }
+
+    public static Location getLastKnownLocationSafe(LocationManager lm, String provider) {
+        if (lm == null || provider == null || provider.isEmpty()) {
+            return null;
+        }
+        try {
+            List<String> providers = lm.getAllProviders();
+            if (providers == null || !providers.contains(provider)) {
+                return null;
+            }
+            return lm.getLastKnownLocation(provider);
+        } catch (Throwable t) {
+            Log.w(TAG, "getLastKnownLocationSafe skipped for provider=" + provider, t);
+            return null;
+        }
     }
 }

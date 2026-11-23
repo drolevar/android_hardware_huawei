@@ -1,0 +1,2 @@
+# Suppress spurious capability probe when iptables-restore opens /system/etc/xtables.lock with O_CREAT
+dontaudit netutils_wrapper self:global_capability_class_set dac_override;

@@ -669,6 +669,16 @@ class Phase6BSepolicyTests(unittest.TestCase):
         rild_te = re.sub(r"#.*", "", (VENDOR / "rild.te").read_text())
         self.assertIn("allow rild proc_net:file rw_file_perms;", rild_te)
 
+    def test_attempt16_netutils_wrapper_dontaudit_dac_override(self):
+        netutils_te = re.sub(r"#.*", "", (POLICY / "private/netutils_wrapper.te").read_text())
+        self.assertIn(
+            "dontaudit netutils_wrapper self:global_capability_class_set dac_override;",
+            netutils_te,
+        )
+        self.assertIsNone(
+            re.search(r"^\s*allow\s+netutils_wrapper\b.*dac_override", netutils_te, re.M)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
