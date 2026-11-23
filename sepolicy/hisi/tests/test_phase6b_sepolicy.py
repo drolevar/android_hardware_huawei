@@ -574,12 +574,100 @@ class Phase6BSepolicyTests(unittest.TestCase):
         cc_xml = (hw_root / "overlay/HisiCarrierConfigOverlay/res/xml/vendor.xml").read_text()
         self.assertIn('name="carrier_volte_available_bool" value="true"', cc_xml)
         self.assertIn('name="carrier_volte_roaming_available_bool" value="true"', cc_xml)
-        self.assertIn('name="carrier_wfc_ims_available_bool" value="false"', cc_xml)
+        self.assertIn('name="carrier_wfc_ims_available_bool" value="true"', cc_xml)
+        self.assertIn('name="carrier_wfc_supports_wifi_only_bool" value="true"', cc_xml)
+        self.assertIn('name="carrier_default_wfc_ims_mode_int" value="1"', cc_xml)
+        self.assertIn('name="carrier_default_wfc_ims_roaming_mode_int" value="2"', cc_xml)
         self.assertIn('<string name="config_ims_mmtel_package_override_string">com.huawei.ims</string>', cc_xml)
 
         shim_java = (hw_root / "ims/shim/src/com/huawei/ims/HwImsShim.java").read_text()
         self.assertIn('vendor.huawei.hardware.radio@2.0::IRadio', shim_java)
         self.assertIn('TRANSACTION_SET_IMS_SWITCH = 4', shim_java)
+
+    def test_attempt13_vowifi_and_dualsim_sepolicy_closure(self):
+        decls = load_type_declarations()
+        self.assertIn("dev_type", decls["vowifi_proxy_device"])
+        self.assertIn("dev_type", decls["nmctrlvcom_device"])
+        self.assertIn("data_file_type", decls["vendor_iked_data_file"])
+        self.assertNotIn("core_data_file_type", decls["vendor_iked_data_file"])
+        self.assertIn("data_file_type", decls["vendor_hinetmanager_data_file"])
+        self.assertNotIn("core_data_file_type", decls["vendor_hinetmanager_data_file"])
+        self.assertIn("vendor_file_type", decls["vendor_iked_cert_file"])
+        self.assertIn("vndservice_manager_type", decls["hivwserver_service"])
+
+        rules = load_file_contexts()
+        self.assertEqual(resolve_type(rules, "/vendor/bin/iked"), "iked_exec")
+        self.assertEqual(resolve_type(rules, "/vendor/bin/hinetmanager"), "hinetmanager_exec")
+        self.assertEqual(resolve_type(rules, "/vendor/bin/hivwserver"), "hivwserver_exec")
+        self.assertEqual(
+            resolve_type(rules, "/vendor/etc/ikedconfig/root_cert/21603.cer"),
+            "vendor_iked_cert_file",
+        )
+        self.assertEqual(resolve_type(rules, "/dev/voice_proxy_vowifi"), "vowifi_proxy_device")
+        self.assertEqual(resolve_type(rules, "/dev/nmctrlvcom"), "nmctrlvcom_device")
+        self.assertEqual(
+            resolve_type(rules, "/data/vendor/iked_config/racoon2.conf"),
+            "vendor_iked_data_file",
+        )
+        self.assertEqual(
+            resolve_type(rules, "/data/vendor/hinetmanager/state"),
+            "vendor_hinetmanager_data_file",
+        )
+
+        vndsvc = [
+            line.split()
+            for line in (VENDOR / "vndservice_contexts").read_text().splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        self.assertIn(["vowifi.service", "u:object_r:hivwserver_service:s0"], vndsvc)
+
+        priv_prop = (POLICY / "private/property_contexts").read_text()
+        self.assertIn("ro.config.hw_vowifi              u:object_r:telephony_config_prop:s0 exact string", priv_prop)
+
+        ven_prop = (VENDOR / "property_contexts").read_text()
+        for prop_key in (
+            "ro.vendor.config.hw_vowifi",
+            "ro.vendor.config.vowifi_iked_log",
+            "vendor.sys.hinetmanager_has_restarted",
+        ):
+            self.assertIn(prop_key, ven_prop)
+
+        iked_te = re.sub(r"#.*", "", (VENDOR / "iked.te").read_text())
+        for needle in (
+            "hal_server_domain(iked, hal_telephony)",
+            "net_domain(iked)",
+            "allow iked self:key_socket create_stream_socket_perms;",
+            "allow iked self:netlink_xfrm_socket { create_socket_perms_no_ioctl nlmsg_read nlmsg_write };",
+            "allow netutils_wrapper iked:fd use;",
+        ):
+            self.assertIn(needle, iked_te)
+
+        hinet_te = re.sub(r"#.*", "", (VENDOR / "hinetmanager.te").read_text())
+        for needle in (
+            "hal_server_domain(hinetmanager, hal_telephony)",
+            "net_domain(hinetmanager)",
+            "allow hinetmanager nmctrlvcom_device:chr_file rw_file_perms;",
+            "set_prop(hinetmanager, vendor_rild_prop)",
+            "allow netutils_wrapper hinetmanager:fd use;",
+        ):
+            self.assertIn(needle, hinet_te)
+
+        hivw_te = re.sub(r"#.*", "", (VENDOR / "hivwserver.te").read_text())
+        for needle in (
+            "vndbinder_use(hivwserver)",
+            "add_service(hivwserver, hivwserver_service)",
+            "binder_call(hivwserver, hal_audio_default)",
+            "allow hivwserver vowifi_proxy_device:chr_file rw_file_perms;",
+        ):
+            self.assertIn(needle, hivw_te)
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        self.assertIn("vndbinder_use(hal_audio_default)", clients_te)
+        self.assertIn("allow hal_audio_default hivwserver_service:service_manager find;", clients_te)
+        self.assertIn("binder_call(hal_audio_default, hivwserver)", clients_te)
+
+        rild_te = re.sub(r"#.*", "", (VENDOR / "rild.te").read_text())
+        self.assertIn("allow rild proc_net:file rw_file_perms;", rild_te)
 
 
 if __name__ == "__main__":

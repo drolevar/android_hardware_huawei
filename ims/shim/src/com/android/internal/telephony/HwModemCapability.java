@@ -15,7 +15,7 @@ public class HwModemCapability {
             return false;
         }
         String caps = SystemProperties.get("persist.radio.modem.cap", "");
-        if (!caps.isEmpty() && capability >= 0 && capability * 2 < caps.length()) {
+        if (!caps.isEmpty() && capability >= 0) {
             int hexIdx = capability / 4;
             int bitIdx = 3 - (capability % 4);
             if (hexIdx < caps.length()) {

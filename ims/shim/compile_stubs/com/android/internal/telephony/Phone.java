@@ -33,6 +33,40 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
         return -1;
     }
 
+    public boolean isImsRegistered() {
+        return false;
+    }
+
+    public boolean isRadioAvailable() {
+        return false;
+    }
+
+    public boolean isRadioOn() {
+        return false;
+    }
+
+    public int getRadioAccessFamily() {
+        return 0;
+    }
+
+    public String getModemUuId() {
+        return "";
+    }
+
+    public RadioCapability getRadioCapability() {
+        return null;
+    }
+
+    @Override
+    public void setRadioPower(boolean power) {}
+
+    @Override
+    public void setRadioPower(
+            boolean power,
+            boolean forEmergencyCall,
+            boolean isSelectedPhoneForEmergencyCall,
+            boolean forceApply) {}
+
     public void registerForNewRingingConnection(Handler h, int what, Object obj) {}
 
     @Override

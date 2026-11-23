@@ -28,4 +28,10 @@ public interface PhoneInternalInterface {
     void getCallBarring(String facility, String password, Message onComplete, int serviceClass);
     void setCallBarring(
             String facility, boolean lockState, String password, Message onComplete, int serviceClass);
+    void setRadioPower(boolean power);
+    void setRadioPower(
+            boolean power,
+            boolean forEmergencyCall,
+            boolean isSelectedPhoneForEmergencyCall,
+            boolean forceApply);
 }

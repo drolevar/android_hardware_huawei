@@ -23,6 +23,9 @@ type vendor_bluedroid_data_file, file_type, data_file_type;
 type vendor_wlan_data_file, file_type, data_file_type;
 type vendor_camera_data_file, file_type, data_file_type;
 type vendor_gps_data_file, file_type, data_file_type;
+type vendor_iked_data_file, file_type, data_file_type;
+type vendor_hinetmanager_data_file, file_type, data_file_type;
+type vendor_iked_cert_file, file_type, vendor_file_type;
 
 # Kirin sysfs & procfs nodes
 type sysfs_hisee, fs_type, sysfs_type, mlstrustedobject;

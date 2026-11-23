@@ -5,7 +5,10 @@
 
 package com.huawei.ims;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
@@ -16,8 +19,14 @@ import android.os.HwBinder;
 import android.os.HwParcel;
 import android.os.IBinder;
 import android.os.IHwBinder;
+import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.provider.Settings;
+import android.telephony.RadioAccessFamily;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.ims.ImsCallForwardInfo;
 import android.util.Log;
@@ -30,12 +39,15 @@ import com.android.internal.telephony.IHwGsmCdmaPhoneEx;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneFactory;
 import com.android.internal.telephony.PhoneInternalInterface;
+import com.android.internal.telephony.ProxyController;
 import com.android.internal.telephony.dataconnection.TransportManager;
 import com.android.internal.telephony.imsphone.IHwImsPhoneEx;
 import com.android.internal.telephony.imsphone.ImsPhone;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
@@ -48,13 +60,67 @@ public final class HwImsShim {
 
     private static final String TAG = "HwImsShim";
     private static final String HW_RADIO_V2_0 = "vendor.huawei.hardware.radio@2.0::IRadio";
+    private static final String DUAL_SIM_COORD_PROP =
+            "com.huawei.ims.dualsim_coordinator_registered";
     private static final int TRANSACTION_SET_IMS_SWITCH = 4;
+    private static final long DDS_ASSIGN_DEBOUNCE_MS = 2_000L;
+    private static final long RADIO_POWER_DEBOUNCE_MS = 3_000L;
+    private static final long RAF_SWAP_DEBOUNCE_MS = 10_000L;
     private static final AtomicInteger SERIAL_GEN = new AtomicInteger(1000);
     private static final Object[] SLOT_LOCKS = {new Object(), new Object()};
     private static final int[] DESIRED_IMS_SWITCH = {-1, -1};
     private static final boolean[] SWITCH_WORKER_ACTIVE = {false, false};
+    private static final Object DUAL_SIM_LOCK = new Object();
+    private static long sLastDdsAssignMs = -100_000L;
+    private static int sLastDdsAssignSubId = -1;
+    private static final long[] sLastRadioPowerKickMs = {-100_000L, -100_000L};
+    private static long sLastRafSwapMs = -100_000L;
     static volatile ImsSwitchSender sSwitchSender = HwImsShim::sendSetImsSwitchOnce;
     static volatile long sInitialRetryDelayMs = 500L;
+
+    static final class SimSubSlot {
+        final int slotId;
+        final int subId;
+        final boolean uiccAppsEnabled;
+
+        SimSubSlot(int slotId, int subId, boolean uiccAppsEnabled) {
+            this.slotId = slotId;
+            this.subId = subId;
+            this.uiccAppsEnabled = uiccAppsEnabled;
+        }
+    }
+
+    interface DualSimEnv {
+        List<SimSubSlot> getActiveSubscriptions();
+
+        int getDefaultDataSubId();
+
+        boolean isValidSubId(int subId);
+
+        int getSlotIndex(int subId);
+
+        void setDefaultDataSubId(int subId);
+
+        boolean isAirplaneModeOff();
+
+        int getPhoneCount();
+
+        boolean isRadioAvailable(int slotId);
+
+        boolean isRadioOn(int slotId);
+
+        void forceRadioPowerOn(int slotId);
+
+        void resyncImsSwitch(int slotId);
+
+        int getCallState();
+
+        String getModemUuid(int slotId);
+
+        int getPhoneRaf(int slotId);
+
+        boolean setRadioCapability(RadioAccessFamily[] rafs);
+    }
 
     private static final Map<ImsCallForwardInfo, int[]> CF_TIMES = new WeakHashMap<>();
 
@@ -76,6 +142,7 @@ public final class HwImsShim {
     private HwImsShim() {}
 
     public static void onServiceCreated(Context context) {
+        ensureDualSimCoordinator(context);
         if (!SystemProperties.getBoolean("ro.config.hw_volte_on", true)) {
             return;
         }
@@ -85,6 +152,355 @@ public final class HwImsShim {
             } else {
                 disableModemImsSwitch(slotId);
             }
+        }
+    }
+
+    public static void ensureDualSimCoordinator(Context context) {
+        if (context == null) {
+            return;
+        }
+        final Context appCtx =
+                context.getApplicationContext() != null ? context.getApplicationContext() : context;
+        synchronized (System.getProperties()) {
+            if ("true".equals(System.getProperties().getProperty(DUAL_SIM_COORD_PROP))) {
+                return;
+            }
+            System.getProperties().setProperty(DUAL_SIM_COORD_PROP, "true");
+        }
+        final Handler mainHandler = new Handler(Looper.getMainLooper());
+        Runnable registerTask =
+                () -> {
+                    final DualSimEnv env = createLiveDualSimEnv(appCtx);
+                    final Runnable runImmediate =
+                            () -> {
+                                try {
+                                    reconcileDualSimState(env, SystemClock.elapsedRealtime());
+                                } catch (Throwable t) {
+                                    Log.w(TAG, "Dual-SIM immediate reconcile failed", t);
+                                }
+                            };
+                    final Runnable runFollowUp2s =
+                            () -> {
+                                try {
+                                    reconcileDualSimState(env, SystemClock.elapsedRealtime());
+                                } catch (Throwable t) {
+                                    Log.w(TAG, "Dual-SIM 2s reconcile failed", t);
+                                }
+                            };
+                    final Runnable runFollowUp5s =
+                            () -> {
+                                try {
+                                    reconcileDualSimState(env, SystemClock.elapsedRealtime());
+                                } catch (Throwable t) {
+                                    Log.w(TAG, "Dual-SIM 5s reconcile failed", t);
+                                }
+                            };
+                    final Runnable scheduleBurst =
+                            () -> {
+                                mainHandler.removeCallbacks(runImmediate);
+                                mainHandler.removeCallbacks(runFollowUp2s);
+                                mainHandler.removeCallbacks(runFollowUp5s);
+                                mainHandler.post(runImmediate);
+                                mainHandler.postDelayed(runFollowUp2s, 2_000L);
+                                mainHandler.postDelayed(runFollowUp5s, 5_000L);
+                            };
+                    try {
+                        SubscriptionManager sm = appCtx.getSystemService(SubscriptionManager.class);
+                        if (sm != null) {
+                            sm.addOnSubscriptionsChangedListener(
+                                    new SubscriptionManager.OnSubscriptionsChangedListener() {
+                                        @Override
+                                        public void onSubscriptionsChanged() {
+                                            scheduleBurst.run();
+                                        }
+                                    });
+                        }
+                    } catch (Throwable t) {
+                        Log.w(TAG, "Failed registering OnSubscriptionsChangedListener", t);
+                    }
+                    try {
+                        IntentFilter filter = new IntentFilter();
+                        filter.addAction(
+                                "android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED");
+                        filter.addAction("android.intent.action.RADIO_STATE_CHANGED");
+                        filter.addAction("android.intent.action.SIM_STATE_CHANGED");
+                        filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+                        BroadcastReceiver receiver =
+                                new BroadcastReceiver() {
+                                    @Override
+                                    public void onReceive(Context ctx, Intent intent) {
+                                        scheduleBurst.run();
+                                    }
+                                };
+                        appCtx.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+                    } catch (Throwable t) {
+                        Log.w(TAG, "Failed registering Dual-SIM BroadcastReceiver", t);
+                    }
+                    scheduleBurst.run();
+                };
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            registerTask.run();
+        } else {
+            mainHandler.post(registerTask);
+        }
+    }
+
+    private static DualSimEnv createLiveDualSimEnv(final Context appCtx) {
+        return new DualSimEnv() {
+            @Override
+            public List<SimSubSlot> getActiveSubscriptions() {
+                SubscriptionManager sm = appCtx.getSystemService(SubscriptionManager.class);
+                if (sm == null) {
+                    return Collections.emptyList();
+                }
+                List<SubscriptionInfo> infos = sm.getActiveSubscriptionInfoList();
+                if (infos == null || infos.isEmpty()) {
+                    return Collections.emptyList();
+                }
+                List<SimSubSlot> out = new ArrayList<>(infos.size());
+                for (SubscriptionInfo info : infos) {
+                    if (info == null) {
+                        continue;
+                    }
+                    boolean enabled = true;
+                    try {
+                        enabled = info.areUiccApplicationsEnabled();
+                    } catch (Throwable ignored) {
+                    }
+                    out.add(
+                            new SimSubSlot(
+                                    info.getSimSlotIndex(), info.getSubscriptionId(), enabled));
+                }
+                return out;
+            }
+
+            @Override
+            public int getDefaultDataSubId() {
+                return SubscriptionManager.getDefaultDataSubscriptionId();
+            }
+
+            @Override
+            public boolean isValidSubId(int subId) {
+                return SubscriptionManager.isValidSubscriptionId(subId);
+            }
+
+            @Override
+            public int getSlotIndex(int subId) {
+                return SubscriptionManager.getSlotIndex(subId);
+            }
+
+            @Override
+            public void setDefaultDataSubId(int subId) {
+                SubscriptionManager sm = appCtx.getSystemService(SubscriptionManager.class);
+                if (sm != null) {
+                    Log.i(TAG, "Auto-selecting default data subscription subId=" + subId);
+                    sm.setDefaultDataSubId(subId);
+                }
+            }
+
+            @Override
+            public boolean isAirplaneModeOff() {
+                try {
+                    return Settings.Global.getInt(
+                                    appCtx.getContentResolver(),
+                                    Settings.Global.AIRPLANE_MODE_ON,
+                                    0)
+                            == 0;
+                } catch (Throwable ignored) {
+                    return true;
+                }
+            }
+
+            @Override
+            public int getPhoneCount() {
+                Phone[] phones = PhoneFactory.getPhones();
+                return phones != null ? phones.length : 0;
+            }
+
+            @Override
+            public boolean isRadioAvailable(int slotId) {
+                Phone phone = PhoneFactory.getPhone(slotId);
+                return phone != null && phone.isRadioAvailable();
+            }
+
+            @Override
+            public boolean isRadioOn(int slotId) {
+                Phone phone = PhoneFactory.getPhone(slotId);
+                return phone != null && phone.isRadioOn();
+            }
+
+            @Override
+            public void forceRadioPowerOn(int slotId) {
+                Phone phone = PhoneFactory.getPhone(slotId);
+                if (phone != null) {
+                    Log.i(TAG, "Forcing RADIO_POWER(true) recovery on slot=" + slotId);
+                    phone.setRadioPower(true, false, false, true);
+                }
+            }
+
+            @Override
+            public void resyncImsSwitch(int slotId) {
+                if (!SystemProperties.getBoolean("ro.config.hw_volte_on", true)) {
+                    return;
+                }
+                if (HwImsManager.isEnhanced4gLteModeSettingEnabledByUser(appCtx, slotId)) {
+                    enableModemImsSwitch(slotId);
+                } else {
+                    disableModemImsSwitch(slotId);
+                }
+            }
+
+            @Override
+            public int getCallState() {
+                try {
+                    TelephonyManager tm = appCtx.getSystemService(TelephonyManager.class);
+                    if (tm != null) {
+                        return tm.getCallState();
+                    }
+                } catch (Throwable ignored) {
+                }
+                return TelephonyManager.CALL_STATE_IDLE;
+            }
+
+            @Override
+            public String getModemUuid(int slotId) {
+                Phone phone = PhoneFactory.getPhone(slotId);
+                if (phone == null) {
+                    return "";
+                }
+                String uuid = phone.getModemUuId();
+                return uuid != null ? uuid : "";
+            }
+
+            @Override
+            public int getPhoneRaf(int slotId) {
+                Phone phone = PhoneFactory.getPhone(slotId);
+                return phone != null ? phone.getRadioAccessFamily() : RadioAccessFamily.RAF_UNKNOWN;
+            }
+
+            @Override
+            public boolean setRadioCapability(RadioAccessFamily[] rafs) {
+                ProxyController pc = ProxyController.getInstance();
+                if (pc == null) {
+                    return false;
+                }
+                boolean accepted = pc.setRadioCapability(rafs);
+                Log.i(TAG, "ProxyController.setRadioCapability accepted=" + accepted);
+                return accepted;
+            }
+        };
+    }
+
+    static void reconcileDualSimState(DualSimEnv env, long nowMs) {
+        if (env == null) {
+            return;
+        }
+        synchronized (DUAL_SIM_LOCK) {
+            List<SimSubSlot> subs = env.getActiveSubscriptions();
+            List<SimSubSlot> enabledSubs = new ArrayList<>();
+            if (subs != null) {
+                for (SimSubSlot s : subs) {
+                    if (s != null
+                            && (s.slotId == 0 || s.slotId == 1)
+                            && s.uiccAppsEnabled
+                            && env.isValidSubId(s.subId)) {
+                        enabledSubs.add(s);
+                    }
+                }
+            }
+
+            int ddsSubId = env.getDefaultDataSubId();
+            boolean ddsValid = env.isValidSubId(ddsSubId);
+            if (!ddsValid && !enabledSubs.isEmpty()) {
+                SimSubSlot chosen = enabledSubs.get(0);
+                for (SimSubSlot s : enabledSubs) {
+                    if (s.slotId == 0) {
+                        chosen = s;
+                        break;
+                    }
+                }
+                if (chosen.subId != sLastDdsAssignSubId
+                        || (nowMs - sLastDdsAssignMs) >= DDS_ASSIGN_DEBOUNCE_MS) {
+                    sLastDdsAssignSubId = chosen.subId;
+                    sLastDdsAssignMs = nowMs;
+                    env.setDefaultDataSubId(chosen.subId);
+                }
+            }
+
+            boolean airplaneOff = env.isAirplaneModeOff();
+            boolean kickedRadioPower = false;
+            if (airplaneOff) {
+                for (SimSubSlot s : enabledSubs) {
+                    int slot = s.slotId;
+                    if (env.isRadioAvailable(slot) && !env.isRadioOn(slot)) {
+                        if ((nowMs - sLastRadioPowerKickMs[slot]) >= RADIO_POWER_DEBOUNCE_MS) {
+                            sLastRadioPowerKickMs[slot] = nowMs;
+                            env.forceRadioPowerOn(slot);
+                            env.resyncImsSwitch(slot);
+                            kickedRadioPower = true;
+                        }
+                    }
+                }
+            }
+
+            if (!airplaneOff || !ddsValid || kickedRadioPower) {
+                return;
+            }
+            int ddsSlot = env.getSlotIndex(ddsSubId);
+            if (ddsSlot != 0 && ddsSlot != 1) {
+                return;
+            }
+            int otherSlot = 1 - ddsSlot;
+            int phoneCount = env.getPhoneCount();
+            if (phoneCount < 2
+                    || !env.isRadioAvailable(0)
+                    || !env.isRadioAvailable(1)
+                    || env.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
+                return;
+            }
+            String ddsModem = env.getModemUuid(ddsSlot);
+            String otherModem = env.getModemUuid(otherSlot);
+            if (!"0".equals(otherModem) || "0".equals(ddsModem)) {
+                return;
+            }
+            int modem0Raf = env.getPhoneRaf(otherSlot);
+            int modem1Raf = env.getPhoneRaf(ddsSlot);
+            if (modem0Raf == RadioAccessFamily.RAF_UNKNOWN
+                    || modem1Raf == RadioAccessFamily.RAF_UNKNOWN
+                    || modem0Raf == modem1Raf) {
+                return;
+            }
+            if ((nowMs - sLastRafSwapMs) < RAF_SWAP_DEBOUNCE_MS) {
+                return;
+            }
+            RadioAccessFamily[] rafs = new RadioAccessFamily[phoneCount];
+            for (int i = 0; i < phoneCount; i++) {
+                if (i == ddsSlot) {
+                    rafs[i] = new RadioAccessFamily(ddsSlot, modem0Raf);
+                } else if (i == otherSlot) {
+                    rafs[i] = new RadioAccessFamily(otherSlot, modem1Raf);
+                } else {
+                    rafs[i] = new RadioAccessFamily(i, env.getPhoneRaf(i));
+                }
+            }
+            if (env.setRadioCapability(rafs)) {
+                sLastRafSwapMs = nowMs;
+                env.resyncImsSwitch(0);
+                env.resyncImsSwitch(1);
+            }
+        }
+    }
+
+    static void resetDualSimStateForTest() {
+        synchronized (System.getProperties()) {
+            System.getProperties().remove(DUAL_SIM_COORD_PROP);
+        }
+        synchronized (DUAL_SIM_LOCK) {
+            sLastDdsAssignMs = -100_000L;
+            sLastDdsAssignSubId = -1;
+            sLastRadioPowerKickMs[0] = -100_000L;
+            sLastRadioPowerKickMs[1] = -100_000L;
+            sLastRafSwapMs = -100_000L;
         }
     }
 

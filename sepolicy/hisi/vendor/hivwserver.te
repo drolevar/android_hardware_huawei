@@ -1,0 +1,14 @@
+# Huawei VoWiFi HiFi DSP voice proxy server (.225 parity)
+type hivwserver, domain;
+type hivwserver_exec, exec_type, vendor_file_type, file_type;
+
+init_daemon_domain(hivwserver)
+net_domain(hivwserver)
+vndbinder_use(hivwserver)
+add_service(hivwserver, hivwserver_service)
+binder_call(hivwserver, hal_audio_default)
+
+allow hivwserver self:global_capability_class_set sys_nice;
+allow hivwserver vowifi_proxy_device:chr_file rw_file_perms;
+allow hivwserver sysfs_devices_system_cpu:file w_file_perms;
+allow hivwserver proc:file rw_file_perms;

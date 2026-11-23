@@ -1,0 +1,2 @@
+# Vendor Binder services grounded in .225 policy
+type hivwserver_service, vndservice_manager_type;

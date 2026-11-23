@@ -4,6 +4,15 @@
 //
 
 java_library {
+    name: "huawei-ims-qoe-compile-stubs",
+    installable: false,
+    platform_apis: true,
+    srcs: [
+        "compile_stubs/android/net/wifi/HwQoE/*.java",
+    ],
+}
+
+java_library {
     name: "huawei-ims-shim",
     installable: false,
     platform_apis: true,
@@ -12,6 +21,8 @@ java_library {
     ],
     libs: [
         "framework-connectivity.stubs.module_lib",
+        "framework-wifi.stubs.module_lib",
+        "huawei-ims-qoe-compile-stubs",
         "ims-common",
         "telephony-common",
         "voip-common",

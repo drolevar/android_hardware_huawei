@@ -129,6 +129,12 @@
 # Vibrator
 /vendor/bin/hw/android\.hardware\.vibrator-service\.huawei u:object_r:hal_vibrator_default_exec:s0
 
+# VoWiFi (.225 iked, hinetmanager, hivwserver)
+/vendor/bin/iked                                u:object_r:iked_exec:s0
+/vendor/bin/hinetmanager                        u:object_r:hinetmanager_exec:s0
+/vendor/bin/hivwserver                          u:object_r:hivwserver_exec:s0
+/vendor/etc/ikedconfig/root_cert(/.*)?          u:object_r:vendor_iked_cert_file:s0
+
 # Hisi hals (misc)
 /vendor/bin/hw/vendor\.huawei\.hardware\.hivrar@1\.0-service u:object_r:vendor_hal_hisi_misc_default_exec:s0
 /vendor/bin/hw/vendor\.huawei\.hardware\.huaweisigntool@1\.0-service u:object_r:vendor_hal_hisi_misc_default_exec:s0
@@ -176,6 +182,8 @@
 /dev/appvcom.*                                  u:object_r:radio_device:s0
 /dev/madapt                                     u:object_r:radio_device:s0
 /dev/ttySPI.*                                   u:object_r:radio_device:s0
+/dev/nmctrlvcom                                 u:object_r:nmctrlvcom_device:s0
+/dev/voice_proxy_vowifi                         u:object_r:vowifi_proxy_device:s0
 /dev/(hisi_perf_ctrl|acpuddr_link_governor_level|iaware_qos_ctrl) u:object_r:vendor_perf_ctrl_device:s0
 /dev/(pn544|cxd224x-i2c)                        u:object_r:nfc_device:s0
 /data/vendor/camera(/.*)?                       u:object_r:vendor_camera_data_file:s0
@@ -187,6 +195,8 @@
 /data/vendor/hwcdump(/.*)?                      u:object_r:vendor_hwcdump_data_file:s0
 /data/vendor/bluedroid(/.*)?                    u:object_r:vendor_bluedroid_data_file:s0
 /data/vendor/wifi(/.*)?                         u:object_r:vendor_wlan_data_file:s0
+/data/vendor/iked_config(/.*)?                  u:object_r:vendor_iked_data_file:s0
+/data/vendor/hinetmanager(/.*)?                 u:object_r:vendor_hinetmanager_data_file:s0
 /sys/devices/platform/0\.hisee(/.*)?            u:object_r:sysfs_hisee:s0
 /sys/class/graphics/fb[0-9](/.*)?               u:object_r:sysfs_framebuffer:s0
 /sys/devices/virtual/graphics/fb[0-9](/.*)?     u:object_r:sysfs_framebuffer:s0

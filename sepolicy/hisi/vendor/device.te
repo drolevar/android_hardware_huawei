@@ -31,3 +31,5 @@ type vendor_ipu_device, dev_type;
 type vendor_ivp_device, dev_type;
 type vendor_fingerprint_device, dev_type;
 type vendor_perf_ctrl_device, dev_type;
+type vowifi_proxy_device, dev_type;
+type nmctrlvcom_device, dev_type;

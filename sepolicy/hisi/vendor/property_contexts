@@ -38,3 +38,6 @@ vendor.hw_mc.esim.      u:object_r:vendor_rild_prop:s0
 vendor.hw_mc.radio.     u:object_r:vendor_rild_prop:s0
 vendor.hw_mc.ril.       u:object_r:vendor_rild_prop:s0
 persist.vendor.radio.   u:object_r:vendor_rild_prop:s0
+ro.vendor.config.hw_vowifi             u:object_r:vendor_rild_prop:s0
+ro.vendor.config.vowifi_iked_log       u:object_r:vendor_rild_prop:s0
+vendor.sys.hinetmanager_has_restarted  u:object_r:vendor_rild_prop:s0

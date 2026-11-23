@@ -11,21 +11,35 @@ import android.telephony.SubscriptionManager;
 import android.telephony.ims.ImsMmTelManager;
 
 public class HwImsManager {
-    private static ImsManager getAospImsManager(Context context, int slotId) {
+    private static int resolveSlotId(int slotOrSubId) {
+        if (slotOrSubId == 0 || slotOrSubId == 1) {
+            return slotOrSubId;
+        }
+        int slot = SubscriptionManager.getSlotIndex(slotOrSubId);
+        return (slot == 0 || slot == 1) ? slot : 0;
+    }
+
+    private static ImsManager getAospImsManager(Context context, int slotOrSubId) {
         try {
-            return ImsManager.getInstance(context, slotId);
+            return ImsManager.getInstance(context, resolveSlotId(slotOrSubId));
         } catch (Throwable ignored) {
             return null;
         }
     }
 
-    private static ImsMmTelManager getMmTelManager(Context context, int slotId) {
+    private static ImsMmTelManager getMmTelManager(Context context, int slotOrSubId) {
         try {
             SubscriptionManager sm =
                     context != null ? context.getSystemService(SubscriptionManager.class) : null;
+            int slotId = resolveSlotId(slotOrSubId);
             int[] subIds = sm != null ? sm.getSubscriptionIds(slotId) : null;
-            if (subIds != null && subIds.length > 0 && SubscriptionManager.isValidSubscriptionId(subIds[0])) {
+            if (subIds != null
+                    && subIds.length > 0
+                    && SubscriptionManager.isValidSubscriptionId(subIds[0])) {
                 return ImsMmTelManager.createForSubscriptionId(subIds[0]);
+            }
+            if (slotOrSubId > 1 && SubscriptionManager.isValidSubscriptionId(slotOrSubId)) {
+                return ImsMmTelManager.createForSubscriptionId(slotOrSubId);
             }
         } catch (Throwable ignored) {
         }
@@ -118,6 +132,20 @@ public class HwImsManager {
         } catch (Throwable ignored) {
         }
         return false;
+    }
+
+    public static boolean isWfcRoamingEnabledByUser(Context context, int slotId) {
+        if (!SystemProperties.getBoolean("ro.config.hw_vowifi", false)) {
+            return false;
+        }
+        try {
+            ImsMmTelManager mgr = getMmTelManager(context, slotId);
+            if (mgr != null) {
+                return mgr.isVoWiFiRoamingSettingEnabled();
+            }
+        } catch (Throwable ignored) {
+        }
+        return true;
     }
 
     public static int getWfcMode(Context context, boolean roaming, int slotId) {

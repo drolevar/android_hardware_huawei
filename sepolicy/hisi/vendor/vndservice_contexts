@@ -1,0 +1,2 @@
+# Huawei VoWiFi voice proxy vendor Binder service (.225 parity)
+vowifi.service                                         u:object_r:hivwserver_service:s0

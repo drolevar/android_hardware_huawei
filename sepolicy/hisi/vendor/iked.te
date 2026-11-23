@@ -1,0 +1,46 @@
+# Huawei VoWiFi IKEv2 / ePDG daemon (.225 parity)
+type iked, domain;
+type iked_exec, exec_type, vendor_file_type, file_type;
+
+init_daemon_domain(iked)
+hal_server_domain(iked, hal_telephony)
+net_domain(iked)
+
+allow iked self:global_capability_class_set {
+    fowner
+    net_admin
+    net_bind_service
+    net_raw
+    sys_admin
+    sys_resource
+};
+allow iked self:key_socket create_stream_socket_perms;
+allow iked self:netlink_xfrm_socket { create_socket_perms_no_ioctl nlmsg_read nlmsg_write };
+allow iked self:netlink_route_socket { nlmsg_read nlmsg_write };
+allow iked kernel:system module_request;
+
+allow iked proc_net:file rw_file_perms;
+allow iked usermodehelper:file r_file_perms;
+allow iked rtc_device:chr_file r_file_perms;
+r_dir_file(iked, {
+    vendor_configs_file
+    vendor_iked_cert_file
+    sysfs_net
+})
+
+allow iked vendor_data_file:dir create_dir_perms;
+allow iked { vendor_iked_data_file vendor_logcat_data_file }:dir create_dir_perms;
+allow iked { vendor_iked_data_file vendor_logcat_data_file }:file create_file_perms;
+get_prop(iked, vendor_rild_prop)
+
+# Inherited pipes/sockets when iked invokes /system/bin/ip-wrapper-1.0 (netutils_wrapper)
+allow netutils_wrapper iked:fd use;
+allow netutils_wrapper iked:dir getattr;
+allow netutils_wrapper iked:fifo_file { getattr read write };
+allow netutils_wrapper iked:{
+    key_socket
+    udp_socket
+    rawip_socket
+    netlink_route_socket
+    netlink_xfrm_socket
+} { getattr read write };

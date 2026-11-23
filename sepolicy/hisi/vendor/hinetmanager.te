@@ -1,0 +1,47 @@
+# Huawei VoWiFi network / tunnel route manager (.225 parity)
+type hinetmanager, domain;
+type hinetmanager_exec, exec_type, vendor_file_type, file_type;
+
+init_daemon_domain(hinetmanager)
+hal_server_domain(hinetmanager, hal_telephony)
+net_domain(hinetmanager)
+
+allow hinetmanager self:global_capability_class_set {
+    fowner
+    net_admin
+    net_bind_service
+    net_raw
+    sys_admin
+    sys_module
+    sys_resource
+};
+allow hinetmanager self:netlink_route_socket { nlmsg_read nlmsg_write };
+allow hinetmanager kernel:system module_request;
+
+allow hinetmanager proc_net:file { rw_file_perms create setattr };
+allow hinetmanager usermodehelper:file r_file_perms;
+allow hinetmanager nmctrlvcom_device:chr_file rw_file_perms;
+allow hinetmanager vendor_toolbox_exec:file rx_file_perms;
+
+allow hinetmanager vendor_data_file:dir create_dir_perms;
+allow hinetmanager { vendor_hinetmanager_data_file vendor_logcat_data_file }:dir create_dir_perms;
+allow hinetmanager { vendor_hinetmanager_data_file vendor_logcat_data_file }:file create_file_perms;
+allowxperm hinetmanager { vendor_hinetmanager_data_file vendor_data_file }:file ioctl {
+    0x8913
+    0x8914
+    0x8916
+    0x8918
+    0x891c
+    0x8922
+};
+set_prop(hinetmanager, vendor_rild_prop)
+
+# Inherited pipes/sockets when hinetmanager invokes netutils_wrapper
+allow netutils_wrapper hinetmanager:fd use;
+allow netutils_wrapper hinetmanager:dir getattr;
+allow netutils_wrapper hinetmanager:fifo_file { getattr read write };
+allow netutils_wrapper hinetmanager:{
+    udp_socket
+    rawip_socket
+    netlink_route_socket
+} { getattr read write };

@@ -19,6 +19,6 @@ public class HwTelephonyManagerInner {
     }
 
     public boolean isWifiCallingAvailable(int slotId) {
-        return SystemProperties.getBoolean("ro.vendor.config.hw_vowifi", false);
+        return SystemProperties.getBoolean("ro.config.hw_vowifi", false);
     }
 }

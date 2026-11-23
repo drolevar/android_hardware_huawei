@@ -47,6 +47,7 @@ ro.config.hw_support_omadm       u:object_r:telephony_config_prop:s0 exact strin
 ro.config.hw_ut_ims              u:object_r:telephony_config_prop:s0 exact string
 ro.config.hw_vilte_enhancement   u:object_r:telephony_config_prop:s0 exact string
 ro.config.hw_volte_dyn           u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_vowifi              u:object_r:telephony_config_prop:s0 exact string
 ro.config.hw_vowifi_mmsut        u:object_r:telephony_config_prop:s0 exact string
 ro.config.hw_vtlte_on            u:object_r:telephony_config_prop:s0 exact string
 ro.config.phoneland              u:object_r:telephony_config_prop:s0 exact string
