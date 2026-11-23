@@ -42,20 +42,8 @@ public final class HisiRadioBridge {
             "vendor.huawei.hardware.hisiradio@1.0::IHisiRadio";
     private static final String IFACE_HISI_RADIO_RSP_1_0 =
             "vendor.huawei.hardware.hisiradio@1.0::IHisiRadioResponse";
-    private static final String IFACE_HISI_RADIO_RSP_1_1 =
-            "vendor.huawei.hardware.hisiradio@1.1::IHisiRadioResponse";
-    private static final String IFACE_HISI_RADIO_RSP_1_2 =
-            "vendor.huawei.hardware.hisiradio@1.2::IHisiRadioResponse";
-    private static final String IFACE_HISI_RADIO_RSP_1_3 =
-            "vendor.huawei.hardware.hisiradio@1.3::IHisiRadioResponse";
     private static final String IFACE_HISI_RADIO_IND_1_0 =
             "vendor.huawei.hardware.hisiradio@1.0::IHisiRadioIndication";
-    private static final String IFACE_HISI_RADIO_IND_1_1 =
-            "vendor.huawei.hardware.hisiradio@1.1::IHisiRadioIndication";
-    private static final String IFACE_HISI_RADIO_IND_1_2 =
-            "vendor.huawei.hardware.hisiradio@1.2::IHisiRadioIndication";
-    private static final String IFACE_HISI_RADIO_IND_1_3 =
-            "vendor.huawei.hardware.hisiradio@1.3::IHisiRadioIndication";
     private static final String IFACE_SERVICE_MANAGER_1_0 =
             "android.hidl.manager@1.0::IServiceManager";
     private static final String IFACE_SERVICE_NOTIFICATION_1_0 =
@@ -712,14 +700,12 @@ public final class HisiRadioBridge {
 
     private final class ResponseStub extends HwBinder {
         private final int mPhoneId;
+        // Advertise @1.0 ONLY: libril.so HisiRadioImpl10::setResponseFunctionsHuawei (0xa05d0)
+        // casts to @1.1/@1.2/@1.3 via interfaceChain; if @1.2 (HisiRadioService[slot]+48) is
+        // non-null, radio::getHwDataRegistrationStateResponse13 (0xb2fc0) diverts standard AOSP
+        // RIL_REQUEST_DATA_REGISTRATION_STATE (req=21) away from IRadioResponse@1.4.
         private final ArrayList<String> mChain =
-                new ArrayList<>(
-                        Arrays.asList(
-                                IFACE_HISI_RADIO_RSP_1_3,
-                                IFACE_HISI_RADIO_RSP_1_2,
-                                IFACE_HISI_RADIO_RSP_1_1,
-                                IFACE_HISI_RADIO_RSP_1_0,
-                                IFACE_IBASE));
+                new ArrayList<>(Arrays.asList(IFACE_HISI_RADIO_RSP_1_0, IFACE_IBASE));
 
         ResponseStub(int phoneId) {
             mPhoneId = phoneId;
@@ -802,14 +788,10 @@ public final class HisiRadioBridge {
 
     private final class IndicationStub extends HwBinder {
         private final int mPhoneId;
+        // Advertise @1.0 ONLY so libril.so leaves @1.1/@1.2/@1.3 indication slots null and only
+        // delivers @1.0 VoWiFi/IMSA indications (imsaToVowifiMsg, TX 5).
         private final ArrayList<String> mChain =
-                new ArrayList<>(
-                        Arrays.asList(
-                                IFACE_HISI_RADIO_IND_1_3,
-                                IFACE_HISI_RADIO_IND_1_2,
-                                IFACE_HISI_RADIO_IND_1_1,
-                                IFACE_HISI_RADIO_IND_1_0,
-                                IFACE_IBASE));
+                new ArrayList<>(Arrays.asList(IFACE_HISI_RADIO_IND_1_0, IFACE_IBASE));
 
         IndicationStub(int phoneId) {
             mPhoneId = phoneId;

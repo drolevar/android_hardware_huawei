@@ -5,10 +5,12 @@
 
 package com.huawei.ims;
 
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
@@ -169,6 +171,7 @@ public final class HwImsShim {
             }
             System.getProperties().setProperty(DUAL_SIM_COORD_PROP, "true");
         }
+        ensureDualLteAndVoWifiState(appCtx);
         final Handler mainHandler = new Handler(Looper.getMainLooper());
         Runnable registerTask =
                 () -> {
@@ -1015,5 +1018,101 @@ public final class HwImsShim {
             out[i] = b != null ? b : 0;
         }
         return out;
+    }
+
+    private static void ensureDualLteAndVoWifiState(Context appCtx) {
+        try {
+            Method setProp =
+                    SystemProperties.class.getMethod("set", String.class, String.class);
+            if (!"1".equals(SystemProperties.get("persist.radio.defdualltecap", ""))) {
+                setProp.invoke(null, "persist.radio.defdualltecap", "1");
+            }
+            if (!"1".equals(SystemProperties.get("persist.radio.dualltecap", ""))) {
+                setProp.invoke(null, "persist.radio.dualltecap", "1");
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Unable to sync persist.radio.defdualltecap/dualltecap", t);
+        }
+        try {
+            if (SystemProperties.getBoolean("ro.config.hw_vowifi", false)) {
+                PackageManager pm = appCtx.getPackageManager();
+                if (pm != null
+                        && pm.getApplicationEnabledSetting("com.hisi.mapcon")
+                                == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER) {
+                    Log.i(TAG, "Re-enabling com.hisi.mapcon for VoWiFi");
+                    pm.setApplicationEnabledSetting(
+                            "com.hisi.mapcon",
+                            PackageManager.COMPONENT_ENABLED_STATE_DEFAULT,
+                            0);
+                }
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Unable to check/re-enable com.hisi.mapcon", t);
+        }
+    }
+
+    public static PendingIntent getPendingIntentBroadcast(
+            Context context, int requestCode, Intent intent, int flags) {
+        if ((flags & (PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_MUTABLE)) == 0) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        return PendingIntent.getBroadcast(context, requestCode, intent, flags);
+    }
+
+    public static PendingIntent getPendingIntentActivity(
+            Context context, int requestCode, Intent intent, int flags) {
+        if ((flags & (PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_MUTABLE)) == 0) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        return PendingIntent.getActivity(context, requestCode, intent, flags);
+    }
+
+    static int resolveDynamicReceiverFlags(IntentFilter filter, String broadcastPermission) {
+        if (broadcastPermission != null && !broadcastPermission.isEmpty()) {
+            return Context.RECEIVER_EXPORTED;
+        }
+        if (filter != null) {
+            int count = filter.countActions();
+            if (count > 0) {
+                boolean allAndroidSystemActions = true;
+                for (int i = 0; i < count; i++) {
+                    String action = filter.getAction(i);
+                    if (action == null || !action.startsWith("android.")) {
+                        allAndroidSystemActions = false;
+                        break;
+                    }
+                }
+                if (allAndroidSystemActions) {
+                    return Context.RECEIVER_EXPORTED;
+                }
+            }
+        }
+        return Context.RECEIVER_NOT_EXPORTED;
+    }
+
+    public static Intent registerReceiverCompat(
+            Context context, BroadcastReceiver receiver, IntentFilter filter) {
+        if (context == null) {
+            return null;
+        }
+        return context.registerReceiver(
+                receiver, filter, resolveDynamicReceiverFlags(filter, null));
+    }
+
+    public static Intent registerReceiverCompat(
+            Context context,
+            BroadcastReceiver receiver,
+            IntentFilter filter,
+            String broadcastPermission,
+            Handler scheduler) {
+        if (context == null) {
+            return null;
+        }
+        return context.registerReceiver(
+                receiver,
+                filter,
+                broadcastPermission,
+                scheduler,
+                resolveDynamicReceiverFlags(filter, broadcastPermission));
     }
 }
