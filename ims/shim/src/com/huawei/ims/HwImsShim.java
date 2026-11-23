@@ -21,6 +21,7 @@ import android.os.SystemProperties;
 import android.telephony.TelephonyManager;
 import android.telephony.ims.ImsCallForwardInfo;
 import android.util.Log;
+import com.android.ims.HwImsManager;
 import com.android.internal.telephony.BaseCommands;
 import com.android.internal.telephony.CallManager;
 import com.android.internal.telephony.CommandsInterface;
@@ -38,20 +39,22 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class HwImsShim {
+    interface ImsSwitchSender {
+        boolean send(String slotService, int state);
+    }
+
     private static final String TAG = "HwImsShim";
     private static final String HW_RADIO_V2_0 = "vendor.huawei.hardware.radio@2.0::IRadio";
     private static final int TRANSACTION_SET_IMS_SWITCH = 4;
     private static final AtomicInteger SERIAL_GEN = new AtomicInteger(1000);
-    private static final AtomicInteger[] DESIRED_IMS_SWITCH = {
-        new AtomicInteger(-1), new AtomicInteger(-1)
-    };
-    private static final AtomicBoolean[] SWITCH_WORKER_ACTIVE = {
-        new AtomicBoolean(false), new AtomicBoolean(false)
-    };
+    private static final Object[] SLOT_LOCKS = {new Object(), new Object()};
+    private static final int[] DESIRED_IMS_SWITCH = {-1, -1};
+    private static final boolean[] SWITCH_WORKER_ACTIVE = {false, false};
+    static volatile ImsSwitchSender sSwitchSender = HwImsShim::sendSetImsSwitchOnce;
+    static volatile long sInitialRetryDelayMs = 500L;
 
     private static final Map<ImsCallForwardInfo, int[]> CF_TIMES = new WeakHashMap<>();
 
@@ -73,8 +76,16 @@ public final class HwImsShim {
     private HwImsShim() {}
 
     public static void onServiceCreated(Context context) {
-        enableModemImsSwitch(0);
-        enableModemImsSwitch(1);
+        if (!SystemProperties.getBoolean("ro.config.hw_volte_on", true)) {
+            return;
+        }
+        for (int slotId = 0; slotId <= 1; slotId++) {
+            if (HwImsManager.isEnhanced4gLteModeSettingEnabledByUser(context, slotId)) {
+                enableModemImsSwitch(slotId);
+            } else {
+                disableModemImsSwitch(slotId);
+            }
+        }
     }
 
     public static void enableModemImsSwitch(final int slotId) {
@@ -85,38 +96,56 @@ public final class HwImsShim {
         setModemImsSwitchAsync(slotId, 0);
     }
 
+    static void resetSwitchStateForTest() {
+        for (int slotId = 0; slotId <= 1; slotId++) {
+            synchronized (SLOT_LOCKS[slotId]) {
+                DESIRED_IMS_SWITCH[slotId] = -1;
+                SWITCH_WORKER_ACTIVE[slotId] = false;
+            }
+        }
+    }
+
+    static boolean isSwitchWorkerActiveForTest(int slotId) {
+        synchronized (SLOT_LOCKS[slotId]) {
+            return SWITCH_WORKER_ACTIVE[slotId];
+        }
+    }
+
     private static void setModemImsSwitchAsync(final int slotId, final int state) {
         if (slotId < 0 || slotId > 1) {
             return;
         }
-        DESIRED_IMS_SWITCH[slotId].set(state);
-        if (!SWITCH_WORKER_ACTIVE[slotId].compareAndSet(false, true)) {
-            return;
+        synchronized (SLOT_LOCKS[slotId]) {
+            DESIRED_IMS_SWITCH[slotId] = state;
+            if (SWITCH_WORKER_ACTIVE[slotId]) {
+                return;
+            }
+            SWITCH_WORKER_ACTIVE[slotId] = true;
         }
         final String serviceName = (slotId == 0) ? "slot1" : "slot2";
         Thread worker =
                 new Thread(
                         () -> {
+                            boolean ownsActive = true;
                             try {
                                 int lastSent = -1;
                                 while (true) {
-                                    int target = DESIRED_IMS_SWITCH[slotId].get();
-                                    if (target < 0 || target == lastSent) {
-                                        SWITCH_WORKER_ACTIVE[slotId].set(false);
-                                        int afterClose = DESIRED_IMS_SWITCH[slotId].get();
-                                        if (afterClose >= 0
-                                                && afterClose != lastSent
-                                                && SWITCH_WORKER_ACTIVE[slotId].compareAndSet(
-                                                        false, true)) {
-                                            continue;
+                                    int target;
+                                    synchronized (SLOT_LOCKS[slotId]) {
+                                        target = DESIRED_IMS_SWITCH[slotId];
+                                        if (target < 0 || target == lastSent) {
+                                            SWITCH_WORKER_ACTIVE[slotId] = false;
+                                            ownsActive = false;
+                                            return;
                                         }
-                                        return;
                                     }
                                     boolean sent = false;
-                                    long delayMs = 500L;
+                                    long delayMs = sInitialRetryDelayMs;
                                     for (int attempt = 1; attempt <= 10; attempt++) {
-                                        target = DESIRED_IMS_SWITCH[slotId].get();
-                                        if (sendSetImsSwitchOnce(serviceName, target)) {
+                                        synchronized (SLOT_LOCKS[slotId]) {
+                                            target = DESIRED_IMS_SWITCH[slotId];
+                                        }
+                                        if (sSwitchSender.send(serviceName, target)) {
                                             lastSent = target;
                                             sent = true;
                                             break;
@@ -125,7 +154,10 @@ public final class HwImsShim {
                                             Thread.sleep(delayMs);
                                         } catch (InterruptedException e) {
                                             Thread.currentThread().interrupt();
-                                            SWITCH_WORKER_ACTIVE[slotId].set(false);
+                                            synchronized (SLOT_LOCKS[slotId]) {
+                                                SWITCH_WORKER_ACTIVE[slotId] = false;
+                                                ownsActive = false;
+                                            }
                                             return;
                                         }
                                         delayMs = Math.min(delayMs * 2, 4000L);
@@ -137,12 +169,19 @@ public final class HwImsShim {
                                                         + target
                                                         + ") on "
                                                         + serviceName);
-                                        SWITCH_WORKER_ACTIVE[slotId].set(false);
+                                        synchronized (SLOT_LOCKS[slotId]) {
+                                            SWITCH_WORKER_ACTIVE[slotId] = false;
+                                            ownsActive = false;
+                                        }
                                         return;
                                     }
                                 }
                             } finally {
-                                SWITCH_WORKER_ACTIVE[slotId].set(false);
+                                if (ownsActive) {
+                                    synchronized (SLOT_LOCKS[slotId]) {
+                                        SWITCH_WORKER_ACTIVE[slotId] = false;
+                                    }
+                                }
                             }
                         },
                         "HwImsSwitch-" + serviceName);
@@ -269,7 +308,31 @@ public final class HwImsShim {
     public static void recordVoiceBandInfo(Object baseCommands, int[] bands) {}
 
     public static boolean getImsSwitch(Phone phone) {
-        return SystemProperties.getBoolean("ro.config.hw_volte_on", true);
+        if (!SystemProperties.getBoolean("ro.config.hw_volte_on", true)) {
+            return false;
+        }
+        int slotId = 0;
+        Context ctx = null;
+        if (phone != null) {
+            try {
+                slotId = phone.getPhoneId();
+            } catch (Throwable ignored) {
+            }
+            try {
+                ctx = phone.getContext();
+            } catch (Throwable ignored) {
+            }
+        }
+        if (slotId >= 0 && slotId <= 1) {
+            synchronized (SLOT_LOCKS[slotId]) {
+                if (DESIRED_IMS_SWITCH[slotId] >= 0) {
+                    return DESIRED_IMS_SWITCH[slotId] == 1;
+                }
+            }
+        } else {
+            slotId = 0;
+        }
+        return HwImsManager.isEnhanced4gLteModeSettingEnabledByUser(ctx, slotId);
     }
 
     public static void setSpeechInfoCodec(Phone phone, int codec) {}
@@ -453,7 +516,7 @@ public final class HwImsShim {
                             int.class,
                             Handler.class,
                             ConnectivityManager.NetworkCallback.class);
-            m.invoke(cm, req, legacyType, timeoutMs, h, cb);
+            m.invoke(cm, req, timeoutMs, legacyType, h, cb);
             return;
         } catch (Throwable ignored) {
         }

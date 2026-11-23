@@ -7,7 +7,7 @@
     <carrier_config>
         <boolean name="carrier_volte_available_bool" value="true" />
         <boolean name="carrier_volte_roaming_available_bool" value="true" />
-        <boolean name="carrier_wfc_ims_available_bool" value="true" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
         <boolean name="editable_enhanced_4g_lte_bool" value="true" />
         <boolean name="hide_enhanced_4g_lte_bool" value="false" />
         <string name="config_ims_mmtel_package_override_string">com.huawei.ims</string>

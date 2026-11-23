@@ -89,7 +89,7 @@ public class HwImsManager {
     }
 
     public static boolean isWfcEnabledByPlatform(Context context, int slotId) {
-        if (!SystemProperties.getBoolean("ro.vendor.config.hw_vowifi", false)) {
+        if (!SystemProperties.getBoolean("ro.config.hw_vowifi", false)) {
             return false;
         }
         try {
@@ -103,7 +103,7 @@ public class HwImsManager {
     }
 
     public static boolean isWfcEnabledByUser(Context context, int slotId) {
-        if (!SystemProperties.getBoolean("ro.vendor.config.hw_vowifi", false)) {
+        if (!SystemProperties.getBoolean("ro.config.hw_vowifi", false)) {
             return false;
         }
         try {

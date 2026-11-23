@@ -21,6 +21,10 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
         return 1;
     }
 
+    public int getPhoneId() {
+        return 0;
+    }
+
     public Phone getImsPhone() {
         return null;
     }

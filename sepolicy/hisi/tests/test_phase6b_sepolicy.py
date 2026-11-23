@@ -574,6 +574,7 @@ class Phase6BSepolicyTests(unittest.TestCase):
         cc_xml = (hw_root / "overlay/HisiCarrierConfigOverlay/res/xml/vendor.xml").read_text()
         self.assertIn('name="carrier_volte_available_bool" value="true"', cc_xml)
         self.assertIn('name="carrier_volte_roaming_available_bool" value="true"', cc_xml)
+        self.assertIn('name="carrier_wfc_ims_available_bool" value="false"', cc_xml)
         self.assertIn('<string name="config_ims_mmtel_package_override_string">com.huawei.ims</string>', cc_xml)
 
         shim_java = (hw_root / "ims/shim/src/com/huawei/ims/HwImsShim.java").read_text()
