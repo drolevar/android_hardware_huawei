@@ -26,6 +26,7 @@ import android.os.Message;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.provider.Settings;
+import android.telephony.PhoneStateListener;
 import android.telephony.RadioAccessFamily;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
@@ -1114,5 +1115,36 @@ public final class HwImsShim {
                 broadcastPermission,
                 scheduler,
                 resolveDynamicReceiverFlags(filter, broadcastPermission));
+    }
+
+    private static final WeakHashMap<PhoneStateListener, Integer> sPhoneStateListenerSubIds =
+            new WeakHashMap<>();
+
+    public static void recordPhoneStateListenerSubId(PhoneStateListener listener, Integer subId) {
+        if (listener == null || subId == null) {
+            return;
+        }
+        synchronized (sPhoneStateListenerSubIds) {
+            sPhoneStateListenerSubIds.put(listener, subId);
+        }
+    }
+
+    public static void listenPhoneState(
+            TelephonyManager tm, PhoneStateListener listener, int events) {
+        if (tm == null || listener == null) {
+            return;
+        }
+        Integer subId;
+        synchronized (sPhoneStateListenerSubIds) {
+            subId = sPhoneStateListenerSubIds.get(listener);
+        }
+        TelephonyManager targetTm = tm;
+        if (subId != null && subId.intValue() >= 0) {
+            TelephonyManager subTm = tm.createForSubscriptionId(subId.intValue());
+            if (subTm != null) {
+                targetTm = subTm;
+            }
+        }
+        targetTm.listen(listener, events);
     }
 }
