@@ -1153,6 +1153,74 @@ public final class HwImsShim {
     }
 
     static volatile IntUnaryOperator sSlotIndexResolver = SubscriptionManager::getSlotIndex;
+    static volatile IntUnaryOperator sSubscriptionIdResolver =
+            SubscriptionManager::getSubscriptionId;
+
+    private static String readSimIsoCountryPropertyForPhone(int phoneId) {
+        if (phoneId < 0) {
+            return "";
+        }
+        String prop = SystemProperties.get("gsm.sim.operator.iso-country", "");
+        if (prop == null || prop.isEmpty()) {
+            return "";
+        }
+        String[] values = prop.split(",", -1);
+        if (phoneId >= values.length || values[phoneId] == null) {
+            return "";
+        }
+        return values[phoneId].trim();
+    }
+
+    public static String getSimCountryIsoForSubId(TelephonyManager tm, int subId) {
+        try {
+            if (subId == SubscriptionManager.DEFAULT_SUBSCRIPTION_ID) {
+                if (tm == null) {
+                    return "";
+                }
+                String iso = tm.getSimCountryIso();
+                return iso != null ? iso : "";
+            }
+            if (subId < 0) {
+                return "";
+            }
+            if (tm != null) {
+                TelephonyManager subTm = tm.createForSubscriptionId(subId);
+                if (subTm != null) {
+                    String iso = subTm.getSimCountryIso();
+                    if (iso != null && !iso.isEmpty()) {
+                        return iso;
+                    }
+                }
+            }
+            int slotIndex = sSlotIndexResolver.applyAsInt(subId);
+            return readSimIsoCountryPropertyForPhone(slotIndex);
+        } catch (Throwable t) {
+            Log.w(TAG, "getSimCountryIsoForSubId failed for subId=" + subId, t);
+            return "";
+        }
+    }
+
+    public static String getSimCountryIsoForPhone(TelephonyManager tm, int phoneId) {
+        if (phoneId < 0) {
+            return "";
+        }
+        try {
+            int subId = sSubscriptionIdResolver.applyAsInt(phoneId);
+            if (subId >= 0 && tm != null) {
+                TelephonyManager subTm = tm.createForSubscriptionId(subId);
+                if (subTm != null) {
+                    String iso = subTm.getSimCountryIso();
+                    if (iso != null && !iso.isEmpty()) {
+                        return iso;
+                    }
+                }
+            }
+            return readSimIsoCountryPropertyForPhone(phoneId);
+        } catch (Throwable t) {
+            Log.w(TAG, "getSimCountryIsoForPhone failed for phoneId=" + phoneId, t);
+            return "";
+        }
+    }
 
     public static String getNetworkCountryIsoForSubId(TelephonyManager tm, int subId) {
         if (tm == null) {
