@@ -161,6 +161,7 @@
 /dev/(motionhub|sensorhub|ar)                   u:object_r:sensors_device:s0
 /dev/(ana_hs|ana_hs_core|deviceboxID|dig_hs_power|hi6402_hifi_misc|hifi_misc|smartpakit|soundtrigger_dma_drv|soundtrigger_socdsp_lp_pcm_drv|soundtrigger_socdsp_pcm_drv) u:object_r:audio_device:s0
 /dev/voice_proxy_ctl_dev                        u:object_r:audio_device:s0
+/dev/voice_proxy_extdev                         u:object_r:audio_device:s0
 /dev/video[0-9]{1,2}                            u:object_r:camera_device:s0
 /dev/v4l-subdev.*                               u:object_r:camera_device:s0
 /dev/rpmsg-hisi.*                               u:object_r:camera_device:s0

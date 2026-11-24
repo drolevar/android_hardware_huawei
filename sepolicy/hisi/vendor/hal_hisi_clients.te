@@ -88,6 +88,7 @@ allow vendor_hal_hisi_media_default {
     vendor_cambuf_device
 }:chr_file rw_file_perms;
 allow mediacodec { vendor_vdec_device vendor_venc_device vendor_jpu_device }:chr_file rw_file_perms;
+dontaudit mediacodec { default_prop config_prop }:file r_file_perms;
 
 r_dir_file({ hal_graphics_composer_default vendor_hal_hisi_display_default }, sysfs_framebuffer)
 allow { hal_graphics_composer_default vendor_hal_hisi_display_default } sysfs_framebuffer:file rw_file_perms;
@@ -123,6 +124,7 @@ allow hal_nfc_default vendor_nfc_data_file:dir create_dir_perms;
 allow hal_nfc_default vendor_nfc_data_file:file create_file_perms;
 r_dir_file(hal_nfc_default, sysfs_type)
 allow hal_nfc_default { sysfs_nfc_power_writable sysfs_hisee }:file rw_file_perms;
+dontaudit nfc vendor_nfc_data_file:dir search;
 
 # Secure Element (HiSEE)
 allow hal_secure_element_default sysfs_hisee:dir r_dir_perms;
@@ -144,6 +146,10 @@ allow hal_thermal_default sysfs:dir r_dir_perms;
 allow hal_ir_default vendor_irda_device:chr_file rw_file_perms;
 r_dir_file(hal_ir_default, sysfs_type)
 allow hal_ir_default sysfs:file rw_file_perms;
+# BLA-L29 ir_chip_type=3 (libAudioIrAccess.so) transmits IR via Hi6403/HiFi DSP & audio HAL
+hal_client_domain(hal_ir_default, hal_audio)
+allow hal_ir_default audio_device:chr_file rw_file_perms;
+allow hal_ir_default { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };
 
 allow hal_vibrator_default vendor_haptic_device:chr_file rw_file_perms;
 r_dir_file(hal_vibrator_default, sysfs_type)
@@ -196,6 +202,7 @@ get_prop(hal_camera_default, logd_prop)
 dontaudit hal_camera_default default_prop:file r_file_perms;
 dontaudit hal_camera_default config_prop:file r_file_perms;
 dontaudit hal_camera_default shell_data_file:dir search;
+dontaudit hal_camera_default memtrackproxy_service:service_manager find;
 set_prop(hal_camera_default, vendor_camera_prop)
 
 # Sensors HAL (sensorhub)
@@ -246,3 +253,9 @@ binder_call(vendor_hisi_connectivity, hal_gnss_default)
 # Fingerprint HAL
 allow hal_fingerprint_default vendor_fingerprint_device:chr_file rw_file_perms;
 allow hal_fingerprint_default { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };
+allow hal_fingerprint_default splashtwo_file:dir create_dir_perms;
+allow hal_fingerprint_default splashtwo_file:file create_file_perms;
+dontaudit hal_fingerprint_default default_prop:file r_file_perms;
+
+# Suppress installd filesystem quotaget probes on read-only vendor/HiSEE mounts
+dontaudit installd { hisee_data_file modem_vendor_file }:filesystem quotaget;

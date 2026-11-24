@@ -679,6 +679,42 @@ class Phase6BSepolicyTests(unittest.TestCase):
             re.search(r"^\s*allow\s+netutils_wrapper\b.*dac_override", netutils_te, re.M)
         )
 
+    def test_attempt21_thermal_wifi_fwpath_ir_fingerprint_and_dontaudits(self):
+        genfs_txt = (VENDOR / "genfs_contexts").read_text()
+        for needle in (
+            "genfscon sysfs /devices/virtual/thermal u:object_r:sysfs_thermal:s0",
+            "genfscon sysfs /class/thermal u:object_r:sysfs_thermal:s0",
+            "genfscon sysfs /module/bcmdhd/parameters/firmware_path u:object_r:sysfs_wlan_fwpath:s0",
+            "genfscon sysfs /module/bcmdhd/parameters/nvram_path u:object_r:sysfs_wlan_fwpath:s0",
+        ):
+            self.assertIn(needle, genfs_txt)
+
+        rules = load_file_contexts()
+        self.assertEqual(resolve_type(rules, "/dev/voice_proxy_extdev"), "audio_device")
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        for needle in (
+            "dontaudit mediacodec { default_prop config_prop }:file r_file_perms;",
+            "dontaudit nfc vendor_nfc_data_file:dir search;",
+            "hal_client_domain(hal_ir_default, hal_audio)",
+            "allow hal_ir_default audio_device:chr_file rw_file_perms;",
+            "allow hal_ir_default { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };",
+            "dontaudit hal_camera_default memtrackproxy_service:service_manager find;",
+            "allow hal_fingerprint_default splashtwo_file:dir create_dir_perms;",
+            "allow hal_fingerprint_default splashtwo_file:file create_file_perms;",
+            "dontaudit hal_fingerprint_default default_prop:file r_file_perms;",
+            "dontaudit installd { hisee_data_file modem_vendor_file }:filesystem quotaget;",
+        ):
+            self.assertIn(needle, clients_te)
+
+        for forbidden_allow in (
+            r"^\s*allow\s+mediacodec\b.*(?:default_prop|config_prop)",
+            r"^\s*allow\s+hal_camera_default\b.*memtrackproxy_service",
+            r"^\s*allow\s+hal_fingerprint_default\b.*default_prop",
+            r"^\s*allow\s+installd\b.*quotaget",
+        ):
+            self.assertIsNone(re.search(forbidden_allow, clients_te, re.M))
+
 
 if __name__ == "__main__":
     unittest.main()

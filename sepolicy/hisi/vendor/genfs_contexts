@@ -51,3 +51,9 @@ genfscon sysfs /firmware/devicetree/base/hisi,boardname u:object_r:sysfs_hisi_bo
 genfscon sysfs /firmware/devicetree/base/nfc_exist u:object_r:sysfs_hisee:s0
 genfscon proc /ddr_info u:object_r:proc_hisi_ddr_info:s0
 genfscon sysfs /devices/platform/amba/fdf0d000.i2c/i2c-4/4-0028 u:object_r:sysfs_nfc_power_writable:s0
+
+# Kirin 970 virtual thermal zones & BCM4359 firmware/nvram module parameters
+genfscon sysfs /devices/virtual/thermal u:object_r:sysfs_thermal:s0
+genfscon sysfs /class/thermal u:object_r:sysfs_thermal:s0
+genfscon sysfs /module/bcmdhd/parameters/firmware_path u:object_r:sysfs_wlan_fwpath:s0
+genfscon sysfs /module/bcmdhd/parameters/nvram_path u:object_r:sysfs_wlan_fwpath:s0
