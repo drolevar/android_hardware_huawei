@@ -26,18 +26,24 @@ def _find_android_root() -> pathlib.Path | None:
 JAVA_HARNESS = r"""
 package com.huawei.ims;
 
+import android.content.Intent;
 import android.os.SystemProperties;
+import android.telephony.CarrierConfigManager;
 import android.telephony.RadioAccessFamily;
 import android.telephony.TelephonyManager;
+import android.telephony.ims.stub.ImsRegistrationImplBase;
 import com.android.internal.telephony.HwModemCapability;
 import com.huawei.android.net.wifi.WifiManagerEx;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.LongSupplier;
 
 public final class Attempt13ShimTestHarness {
     private static void assertTrue(boolean cond, String msg) {
@@ -251,12 +257,126 @@ public final class Attempt13ShimTestHarness {
         assertEquals(32, hex.length(), "16-byte RAND must encode to 32 ASCII hex chars for AT^UICCAUTH");
         byte[] roundtrip = (byte[]) h2b.invoke(null, hex);
         assertTrue(Arrays.equals(rand, roundtrip), "Hex roundtrip must match exact bytes");
+
+        // Verify WifiManagerEx TrafficStats supplier override & non-throwing 1L floor.
+        Field supField = WifiManagerEx.class.getDeclaredField("sWlan0TxPacketsSupplier");
+        supField.setAccessible(true);
+        LongSupplier origSup = (LongSupplier) supField.get(null);
+        try {
+            supField.set(null, (LongSupplier) () -> 4242L);
+            byte[] customRaw = WifiManagerEx.fetchWifiSignalInfoForVoWiFi();
+            long customTx = ByteBuffer.wrap(customRaw).order(ByteOrder.LITTLE_ENDIAN).getLong(24);
+            assertEquals(4242L, customTx, "WifiManagerEx must propagate positive TrafficStats count");
+
+            supField.set(null, (LongSupplier) () -> 0L);
+            byte[] zeroRaw = WifiManagerEx.fetchWifiSignalInfoForVoWiFi();
+            long zeroTx = ByteBuffer.wrap(zeroRaw).order(ByteOrder.LITTLE_ENDIAN).getLong(24);
+            assertEquals(1L, zeroTx, "WifiManagerEx must clamp zero tx_packets to 1L");
+
+            supField.set(
+                    null,
+                    (LongSupplier) () -> {
+                        throw new RuntimeException("simulated stats failure");
+                    });
+            byte[] errRaw = WifiManagerEx.fetchWifiSignalInfoForVoWiFi();
+            long errTx = ByteBuffer.wrap(errRaw).order(ByteOrder.LITTLE_ENDIAN).getLong(24);
+            assertEquals(1L, errTx, "WifiManagerEx must clamp stats exceptions to 1L");
+        } finally {
+            supField.set(null, origSup);
+        }
+    }
+
+    private static void testCarrierConfigAndRegTechHelpers() {
+        assertEquals(-1, HwImsShim.extractCarrierConfigSlotId(null), "Null intent slotId");
+
+        Intent bothExtras = new Intent();
+        bothExtras.putExtra(CarrierConfigManager.EXTRA_SLOT_INDEX, 1);
+        bothExtras.putExtra("phone", 0);
+        assertEquals(
+                1,
+                HwImsShim.extractCarrierConfigSlotId(bothExtras),
+                "EXTRA_SLOT_INDEX must take precedence over phone");
+
+        Intent legacyPhoneExtra = new Intent();
+        legacyPhoneExtra.putExtra("phone", 1);
+        assertEquals(
+                1,
+                HwImsShim.extractCarrierConfigSlotId(legacyPhoneExtra),
+                "Legacy phone extra fallback");
+
+        assertEquals(
+                -1,
+                HwImsShim.extractCarrierConfigSlotId(new Intent()),
+                "Intent without slot extras");
+
+        Intent emuiLoaded = new Intent();
+        emuiLoaded.putExtra("carrierConfigChangeState", 1);
+        assertTrue(
+                HwImsShim.isCarrierConfigChangeLoaded(null, 0, emuiLoaded),
+                "EMUI carrierConfigChangeState=1 must be treated as loaded");
+
+        Intent emuiUnloaded = new Intent();
+        emuiUnloaded.putExtra("carrierConfigChangeState", 0);
+        emuiUnloaded.putExtra(CarrierConfigManager.EXTRA_SUBSCRIPTION_INDEX, 2);
+        assertTrue(
+                !HwImsShim.isCarrierConfigChangeLoaded(null, 0, emuiUnloaded),
+                "Explicit EMUI carrierConfigChangeState=0 must stay false");
+
+        Intent aospLoaded = new Intent();
+        aospLoaded.putExtra(CarrierConfigManager.EXTRA_SLOT_INDEX, 0);
+        aospLoaded.putExtra(CarrierConfigManager.EXTRA_SUBSCRIPTION_INDEX, 2);
+        assertTrue(
+                HwImsShim.isCarrierConfigChangeLoaded(null, 0, aospLoaded),
+                "AOSP CARRIER_CONFIG_CHANGED with valid subId must load HwIms");
+
+        Intent aospLegacySub = new Intent();
+        aospLegacySub.putExtra("subscription", 1);
+        assertTrue(
+                HwImsShim.isCarrierConfigChangeLoaded(null, 1, aospLegacySub),
+                "CARRIER_CONFIG_CHANGED with legacy subscription extra must load HwIms");
+
+        Intent aospNoSim = new Intent();
+        aospNoSim.putExtra(CarrierConfigManager.EXTRA_SLOT_INDEX, 0);
+        assertTrue(
+                !HwImsShim.isCarrierConfigChangeLoaded(null, 0, aospNoSim),
+                "AOSP CARRIER_CONFIG_CHANGED without subId must not mark loaded");
+
+        assertTrue(
+                !HwImsShim.isCarrierConfigReadyForSlot(null, 0),
+                "Null context must not report CarrierConfig ready");
+        assertTrue(
+                !HwImsShim.isCarrierConfigReadyForSlot(null, -1),
+                "Negative slot must not report CarrierConfig ready");
+        assertTrue(
+                !HwImsShim.isCarrierConfigChangeLoaded(null, 0, null),
+                "Null context and null intent must return false");
+
+        ImsRegistrationImplBase reg = new ImsRegistrationImplBase();
+        HwImsShim.notifyRegistrationTechUpdate(null, 1, ImsRegistrationImplBase.REGISTRATION_TECH_LTE);
+        HwImsShim.notifyRegistrationTechUpdate(reg, 0, ImsRegistrationImplBase.REGISTRATION_TECH_LTE);
+        assertEquals(
+                Collections.emptyList(),
+                reg.registeredTechs,
+                "LTE service update while unregistered must not call onRegistered");
+
+        HwImsShim.notifyRegistrationTechUpdate(
+                reg, 0, ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN);
+        HwImsShim.notifyRegistrationTechUpdate(reg, 1, ImsRegistrationImplBase.REGISTRATION_TECH_LTE);
+        HwImsShim.notifyRegistrationTechUpdate(
+                reg, 1, ImsRegistrationImplBase.REGISTRATION_TECH_NONE);
+        assertEquals(
+                Arrays.asList(
+                        ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN,
+                        ImsRegistrationImplBase.REGISTRATION_TECH_LTE),
+                reg.registeredTechs,
+                "IWLAN and registered LTE transitions must update ImsRegistrationImplBase tech");
     }
 
     public static void main(String[] args) throws Exception {
         testModemCapabilityBit21();
         testDualSimUnsetDdsAndHotplugAndRafSwap();
         testWifiSignalStructAndHexHelpers();
+        testCarrierConfigAndRegTechHelpers();
         System.out.println("ATTEMPT13_SHIM_TESTS_OK");
     }
 }
@@ -274,7 +394,12 @@ class Attempt13ShimHostTests(unittest.TestCase):
         modlib = android_root / "prebuilts/sdk/current/module-lib"
         cold_cp = ":".join(
             str(modlib / j)
-            for j in ("android.jar", "framework-connectivity.jar", "framework-wifi.jar")
+            for j in (
+                "android.jar",
+                "framework-connectivity.jar",
+                "framework-connectivity-t.jar",
+                "framework-wifi.jar",
+            )
         )
 
         with tempfile.TemporaryDirectory() as td:
@@ -314,6 +439,55 @@ class Attempt13ShimHostTests(unittest.TestCase):
                 "}\n",
                 encoding="utf-8",
             )
+            intent_src = tdp / "test_src/android/content"
+            intent_src.mkdir(parents=True)
+            (intent_src / "Intent.java").write_text(
+                "package android.content;\n"
+                "import java.util.HashMap;\n"
+                "import java.util.Map;\n"
+                "public class Intent {\n"
+                "    public static final String ACTION_AIRPLANE_MODE_CHANGED = \"android.intent.action.AIRPLANE_MODE\";\n"
+                "    private final Map<String, Integer> intExtras = new HashMap<>();\n"
+                "    public boolean hasExtra(String name) { return intExtras.containsKey(name); }\n"
+                "    public int getIntExtra(String name, int def) {\n"
+                "        Integer v = intExtras.get(name);\n"
+                "        return v != null ? v.intValue() : def;\n"
+                "    }\n"
+                "    public Intent putExtra(String name, int value) {\n"
+                "        intExtras.put(name, value);\n"
+                "        return this;\n"
+                "    }\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            ccm_src = tdp / "test_src/android/telephony"
+            ccm_src.mkdir(parents=True)
+            (ccm_src / "CarrierConfigManager.java").write_text(
+                "package android.telephony;\n"
+                "import android.os.PersistableBundle;\n"
+                "public class CarrierConfigManager {\n"
+                "    public static final String EXTRA_SLOT_INDEX = \"android.telephony.extra.SLOT_INDEX\";\n"
+                "    public static final String EXTRA_SUBSCRIPTION_INDEX = \"android.telephony.extra.SUBSCRIPTION_INDEX\";\n"
+                "    public PersistableBundle getConfigForSubId(int subId) { return null; }\n"
+                "    public static boolean isConfigForIdentifiedCarrier(PersistableBundle b) { return false; }\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            reg_src = tdp / "test_src/android/telephony/ims/stub"
+            reg_src.mkdir(parents=True)
+            (reg_src / "ImsRegistrationImplBase.java").write_text(
+                "package android.telephony.ims.stub;\n"
+                "import java.util.ArrayList;\n"
+                "import java.util.List;\n"
+                "public class ImsRegistrationImplBase {\n"
+                "    public static final int REGISTRATION_TECH_NONE = -1;\n"
+                "    public static final int REGISTRATION_TECH_LTE = 0;\n"
+                "    public static final int REGISTRATION_TECH_IWLAN = 1;\n"
+                "    public final List<Integer> registeredTechs = new ArrayList<>();\n"
+                "    public final void onRegistered(int tech) { registeredTechs.add(tech); }\n"
+                "}\n",
+                encoding="utf-8",
+            )
             harness_src = test_src_dir / "Attempt13ShimTestHarness.java"
             harness_src.write_text(JAVA_HARNESS, encoding="utf-8")
 
@@ -348,6 +522,9 @@ class Attempt13ShimHostTests(unittest.TestCase):
                     str(shim_cls),
                     str(sysprop_src / "SystemProperties.java"),
                     str(log_src / "Log.java"),
+                    str(intent_src / "Intent.java"),
+                    str(ccm_src / "CarrierConfigManager.java"),
+                    str(reg_src / "ImsRegistrationImplBase.java"),
                     str(harness_src),
                 ],
                 check=True,

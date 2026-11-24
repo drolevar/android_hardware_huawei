@@ -26,15 +26,18 @@ import android.os.IBinder;
 import android.os.IHwBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.provider.Settings;
+import android.telephony.CarrierConfigManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.RadioAccessFamily;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.ims.ImsCallForwardInfo;
+import android.telephony.ims.stub.ImsRegistrationImplBase;
 import android.util.Log;
 import com.android.ims.HwImsManager;
 import com.android.internal.telephony.BaseCommands;
@@ -1276,6 +1279,83 @@ public final class HwImsShim {
         } catch (Throwable t) {
             Log.w(TAG, "getLastKnownLocationSafe skipped for provider=" + provider, t);
             return null;
+        }
+    }
+
+    public static int extractCarrierConfigSlotId(Intent intent) {
+        if (intent == null) {
+            return -1;
+        }
+        if (intent.hasExtra(CarrierConfigManager.EXTRA_SLOT_INDEX)) {
+            return intent.getIntExtra(CarrierConfigManager.EXTRA_SLOT_INDEX, -1);
+        }
+        if (intent.hasExtra("phone")) {
+            return intent.getIntExtra("phone", -1);
+        }
+        return -1;
+    }
+
+    public static boolean isCarrierConfigReadyForSlot(Context context, int slotId) {
+        if (context == null || slotId < 0) {
+            return false;
+        }
+        try {
+            int subId = sSubscriptionIdResolver.applyAsInt(slotId);
+            if (subId < 0 || subId == Integer.MAX_VALUE) {
+                return false;
+            }
+            CarrierConfigManager ccm = context.getSystemService(CarrierConfigManager.class);
+            if (ccm == null) {
+                return false;
+            }
+            PersistableBundle cfg = ccm.getConfigForSubId(subId);
+            if (cfg == null) {
+                return false;
+            }
+            if (CarrierConfigManager.isConfigForIdentifiedCarrier(cfg)) {
+                return true;
+            }
+            TelephonyManager tm = context.getSystemService(TelephonyManager.class);
+            return tm != null && tm.getSimState(slotId) == TelephonyManager.SIM_STATE_READY;
+        } catch (Throwable t) {
+            Log.w(TAG, "isCarrierConfigReadyForSlot failed for slotId=" + slotId, t);
+            return false;
+        }
+    }
+
+    public static boolean isCarrierConfigChangeLoaded(Context context, int slotId, Intent intent) {
+        if (intent != null) {
+            if (intent.hasExtra("carrierConfigChangeState")) {
+                return intent.getIntExtra("carrierConfigChangeState", 0) == 1;
+            }
+            int subId = intent.getIntExtra(CarrierConfigManager.EXTRA_SUBSCRIPTION_INDEX, -1);
+            if (subId < 0 || subId == Integer.MAX_VALUE) {
+                subId = intent.getIntExtra("subscription", -1);
+            }
+            if (subId >= 0 && subId != Integer.MAX_VALUE) {
+                return true;
+            }
+            if (intent.hasExtra(CarrierConfigManager.EXTRA_SLOT_INDEX)) {
+                return false;
+            }
+        }
+        return isCarrierConfigReadyForSlot(context, slotId);
+    }
+
+    public static void notifyRegistrationTechUpdate(
+            ImsRegistrationImplBase regImpl, int regState, int accessTech) {
+        if (regImpl == null) {
+            return;
+        }
+        try {
+            if (accessTech == ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN) {
+                regImpl.onRegistered(ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN);
+            } else if (accessTech == ImsRegistrationImplBase.REGISTRATION_TECH_LTE
+                    && regState == 1) {
+                regImpl.onRegistered(ImsRegistrationImplBase.REGISTRATION_TECH_LTE);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "notifyRegistrationTechUpdate failed tech=" + accessTech, t);
         }
     }
 }

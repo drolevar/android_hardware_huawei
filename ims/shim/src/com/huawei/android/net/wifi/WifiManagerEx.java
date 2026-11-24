@@ -6,6 +6,7 @@
 package com.huawei.android.net.wifi;
 
 import android.content.Context;
+import android.net.TrafficStats;
 import android.net.wifi.HwQoE.HwQoEQualityInfo;
 import android.net.wifi.HwQoE.c;
 import android.net.wifi.WifiDetectConfInfo;
@@ -15,10 +16,9 @@ import android.os.Message;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneFactory;
 import com.huawei.ims.shim.VoWifiSignalDetectInterruptCallback;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.function.LongSupplier;
 
 /**
  * Static Huawei {@code WifiManagerEx} compatibility methods invoked reflectively by {@code Mapcon}
@@ -29,6 +29,9 @@ public final class WifiManagerEx {
     private static final String FALLBACK_VALID_BSSID = "020000000000";
 
     private WifiManagerEx() {}
+
+    static volatile LongSupplier sWlan0TxPacketsSupplier =
+            () -> TrafficStats.getTxPackets("wlan0");
 
     private static WifiManager resolveWifiManager() {
         try {
@@ -42,13 +45,11 @@ public final class WifiManagerEx {
         return null;
     }
 
-    private static long readWlan0Stat(String statFile) {
-        try (BufferedReader br =
-                new BufferedReader(
-                        new FileReader("/sys/class/net/wlan0/statistics/" + statFile))) {
-            String line = br.readLine();
-            if (line != null) {
-                return Math.max(1L, Long.parseLong(line.trim()));
+    private static long readWlan0TxPackets() {
+        try {
+            long tx = sWlan0TxPacketsSupplier.getAsLong();
+            if (tx > 0L) {
+                return tx;
             }
         } catch (Throwable ignored) {
         }
@@ -89,7 +90,7 @@ public final class WifiManagerEx {
             }
         }
 
-        long txPackets = readWlan0Stat("tx_packets");
+        long txPackets = readWlan0TxPackets();
         ByteBuffer buf = ByteBuffer.allocate(VOWIFI_SIGNAL_RAW_BYTES);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         buf.putInt(0, rssi);
