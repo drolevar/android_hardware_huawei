@@ -1,0 +1,43 @@
+// Public AOSP VNDK-29 BoringSSL libcrypto snapshot with SONAME set to
+// libcrypto-v29.so for Huawei vendor binaries compiled against Android 10 BoringSSL.
+// See README.md for provenance and ELF audit details.
+// SPDX-License-Identifier: Apache-2.0 AND BSD-3-Clause AND ISC AND MIT AND OpenSSL
+
+package {
+    default_applicable_licenses: ["huawei_compat_crypto_v29_license"],
+}
+
+license {
+    name: "huawei_compat_crypto_v29_license",
+    visibility: [":__subpackages__"],
+    license_kinds: [
+        "SPDX-license-identifier-Apache-2.0",
+        "SPDX-license-identifier-BSD",
+        "SPDX-license-identifier-ISC",
+        "SPDX-license-identifier-MIT",
+        "SPDX-license-identifier-OpenSSL",
+        "legacy_unencumbered",
+    ],
+    license_text: ["LICENSE"],
+}
+
+cc_prebuilt_library_shared {
+    name: "libcrypto-v29",
+    vendor: true,
+    compile_multilib: "64",
+    target: {
+        android_arm64: {
+            srcs: ["arm64/libcrypto-v29.so"],
+        },
+    },
+    strip: {
+        none: true,
+    },
+    stl: "none",
+    system_shared_libs: [
+        "libc",
+        "libm",
+        "libdl",
+    ],
+    check_elf_files: true,
+}
