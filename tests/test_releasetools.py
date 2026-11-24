@@ -225,6 +225,53 @@ class ReleasetoolsTests(unittest.TestCase):
         )
         self.assertEqual(mod._GetTargetDevice(info), "blanc")
 
+    def test_blanc_fallback_ota_cache_size(self) -> None:
+        mod = _load_releasetools()
+        sentinel = object()
+        had_options = hasattr(mod.common, "OPTIONS")
+        orig_options = getattr(mod.common, "OPTIONS", sentinel)
+        try:
+            # Case 1: import-time / OPTIONS.target_info_dict detection for blanc when cache_size is None
+            mod.common.OPTIONS = SimpleNamespace(
+                cache_size=None,
+                target_info_dict={"build.prop": SimpleNamespace(GetProp=lambda k: "blanc" if k == "ro.product.device" else None)},
+                info_dict=None,
+            )
+            mod._EnsureBlancCacheSize()
+            self.assertEqual(mod.common.OPTIONS.cache_size, 134217728)
+
+            # Case 2: existing non-None cache_size is preserved unchanged
+            mod.common.OPTIONS.cache_size = 67108864
+            mod._EnsureBlancCacheSize()
+            self.assertEqual(mod.common.OPTIONS.cache_size, 67108864)
+
+            # Case 3: FullOTA_Assertions sets cache_size for blanc when cache_size is None
+            mod.common.OPTIONS = SimpleNamespace(cache_size=None, target_info_dict=None, info_dict=None)
+            in_zip = _make_zip({"SYSTEM/build.prop": b"ro.product.system.device=blanc\n"})
+            out_zip, _ = _make_output_zip()
+            mod.FullOTA_Assertions(SimpleNamespace(input_zip=in_zip, output_zip=out_zip, script=_ScriptRecorder()))
+            out_zip.close()
+            self.assertEqual(mod.common.OPTIONS.cache_size, 134217728)
+
+            # Case 4: non-blanc device leaves cache_size=None untouched
+            mod.common.OPTIONS = SimpleNamespace(
+                cache_size=None,
+                target_info_dict={"build.prop": SimpleNamespace(GetProp=lambda k: "charlotte" if k == "ro.product.device" else None)},
+                info_dict=None,
+            )
+            mod._EnsureBlancCacheSize()
+            self.assertIsNone(mod.common.OPTIONS.cache_size)
+            in_other = _make_zip({"SYSTEM/build.prop": b"ro.product.system.device=charlotte\n"})
+            out_zip2, _ = _make_output_zip()
+            mod.FullOTA_Assertions(SimpleNamespace(input_zip=in_other, output_zip=out_zip2, script=_ScriptRecorder()))
+            out_zip2.close()
+            self.assertIsNone(mod.common.OPTIONS.cache_size)
+        finally:
+            if had_options and orig_options is not sentinel:
+                mod.common.OPTIONS = orig_options
+            elif hasattr(mod.common, "OPTIONS"):
+                delattr(mod.common, "OPTIONS")
+
 
 if __name__ == "__main__":
     unittest.main()
