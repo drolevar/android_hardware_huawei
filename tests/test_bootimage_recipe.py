@@ -17,7 +17,7 @@ HARDWARE = Path(__file__).resolve().parents[1]
 
 
 def make_fixture(top, work, *, descriptor=None, ramdisk_descriptor=None,
-                 signed=False, partition_size=1048576, kernel=None):
+                 build_recovery_vendor=None, signed=False, partition_size=1048576, kernel=None):
     work.mkdir(parents=True, exist_ok=True)
     payload = work / "Image.gz"
     payload.write_bytes(kernel if kernel is not None else gzip.compress(b"synthetic kernel", mtime=0))
@@ -36,6 +36,8 @@ def make_fixture(top, work, *, descriptor=None, ramdisk_descriptor=None,
     setting = "" if descriptor is None else f"BOARD_HUAWEI_KERNEL_AVB_PARTITION_NAME := {descriptor}\n"
     if ramdisk_descriptor is not None:
         setting += f"BOARD_HUAWEI_RAMDISK_AVB_PARTITION_NAME := {ramdisk_descriptor}\n"
+    if build_recovery_vendor is not None:
+        setting += f"BOARD_HUAWEI_BUILD_RECOVERY_VENDOR := {build_recovery_vendor}\n"
     text = "\n".join(macros) + f"""
 PRODUCT_OUT := {work}
 TARGET_KERNEL_SOURCE := {top / 'kernel/huawei/kirin970'}
@@ -59,6 +61,8 @@ INTERNAL_AVB_RECOVERY_SIGNING_ARGS := {signing}
 AVBTOOL := {avb}
 MKBOOTIMG := {top / 'system/tools/mkbootimg/mkbootimg.py'}
 {setting}include {HARDWARE / 'mkbootimg.mk'}
+print-radio-targets:
+	@echo "$(INSTALLED_RADIOIMAGE_TARGET)"
 """
     makefile = work / "Makefile"
     makefile.write_text(text)
@@ -81,15 +85,33 @@ class BootImageRecipeTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.work = Path(self.temp.name)
 
-    def build(self, descriptor=None, *, ramdisk_descriptor=None, target="boot.img",
-              signed=False, kernel=None):
+    def build(self, descriptor=None, *, ramdisk_descriptor=None, build_recovery_vendor=None,
+              target="boot.img", signed=False, kernel=None):
         makefile = make_fixture(self.top, self.work, descriptor=descriptor,
                                 ramdisk_descriptor=ramdisk_descriptor,
+                                build_recovery_vendor=build_recovery_vendor,
                                 signed=signed, kernel=kernel)
         image = self.work / target
         proc = subprocess.run(["make", "-rR", "-s", "-f", str(makefile), str(image)],
                               text=True, capture_output=True, timeout=30)
         return image, proc
+
+    def test_recovery_vendor_opt_out_omits_radioimage_target(self):
+        mk_default = make_fixture(self.top, self.work / "default")
+        out_default = subprocess.check_output(
+            ["make", "-rR", "-s", "-f", str(mk_default), "print-radio-targets"],
+            text=True, timeout=20,
+        )
+        self.assertIn("boot_ramdisk.img", out_default)
+        self.assertIn("recovery_vendor.img", out_default)
+
+        mk_disabled = make_fixture(self.top, self.work / "disabled", build_recovery_vendor="false")
+        out_disabled = subprocess.check_output(
+            ["make", "-rR", "-s", "-f", str(mk_disabled), "print-radio-targets"],
+            text=True, timeout=20,
+        )
+        self.assertIn("boot_ramdisk.img", out_disabled)
+        self.assertNotIn("recovery_vendor.img", out_disabled)
 
     def info(self, image):
         return subprocess.check_output([str(self.avb), "info_image", "--image", str(image)],
