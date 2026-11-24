@@ -235,6 +235,7 @@ r_dir_file(hal_bluetooth_default, vendor_bluedroid_data_file)
 allow hal_bluetooth_default proc_bluetooth_writable:dir r_dir_perms;
 dontaudit hal_bluetooth_default shell_data_file:dir search;
 r_dir_file(hal_wifi_default, vendor_wlan_data_file)
+set_prop(hal_wifi_default, vendor_wlan_prop)
 allow { hal_wifi_supplicant_default hal_wifi_hostapd_default } vendor_wlan_data_file:dir search;
 
 # GNSS HAL & companion daemon binder/data channels

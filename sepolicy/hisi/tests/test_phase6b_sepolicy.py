@@ -721,6 +721,23 @@ class Phase6BSepolicyTests(unittest.TestCase):
         ):
             self.assertIsNone(re.search(forbidden_allow, clients_te, re.M))
 
+    def test_attempt23_vendor_wlan_prop_sepolicy(self):
+        prop_te = (VENDOR / "property.te").read_text()
+        self.assertIn("vendor_internal_prop(vendor_wlan_prop)", prop_te)
+
+        prop_ctx = (VENDOR / "property_contexts").read_text()
+        self.assertRegex(
+            prop_ctx,
+            r"(?m)^vendor\.wlan\.driver\.version\s+u:object_r:vendor_wlan_prop:s0$",
+        )
+        self.assertRegex(
+            prop_ctx,
+            r"(?m)^vendor\.wlan\.firmware\.version\s+u:object_r:vendor_wlan_prop:s0$",
+        )
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        self.assertIn("set_prop(hal_wifi_default, vendor_wlan_prop)", clients_te)
+
 
 if __name__ == "__main__":
     unittest.main()
