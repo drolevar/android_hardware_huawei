@@ -148,7 +148,7 @@ r_dir_file(hal_ir_default, sysfs_type)
 allow hal_ir_default sysfs:file rw_file_perms;
 # BLA-L29 ir_chip_type=3 (libAudioIrAccess.so) transmits IR via Hi6403/HiFi DSP & audio HAL
 hal_client_domain(hal_ir_default, hal_audio)
-allow hal_ir_default audio_device:chr_file rw_file_perms;
+allow hal_ir_default vendor_hifi_dsp_device:chr_file rw_file_perms;
 allow hal_ir_default { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };
 
 allow hal_vibrator_default vendor_haptic_device:chr_file rw_file_perms;
@@ -218,6 +218,7 @@ allow hal_sensors_default sysfs_huawei_sensor:file rw_file_perms;
 vndbinder_use(hal_audio_default)
 allow hal_audio_default hivwserver_service:service_manager find;
 binder_call(hal_audio_default, hivwserver)
+allow hal_audio_default vendor_hifi_dsp_device:chr_file rw_file_perms;
 r_dir_file(hal_audio_default, sysfs_audio_hw_config)
 r_dir_file(hal_audio_default, sysfs_framebuffer)
 r_dir_file(hal_audio_default, sysfs_batteryinfo)

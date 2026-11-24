@@ -21,6 +21,7 @@ type vendor_hwlog_device, dev_type, mlstrustedobject;
 type vendor_dmd_device, dev_type;
 type vendor_haptic_device, dev_type;
 type vendor_irda_device, dev_type;
+type vendor_hifi_dsp_device, dev_type;
 type vendor_gps_device, dev_type;
 type vendor_cambuf_device, dev_type;
 type vendor_vdec_device, dev_type;

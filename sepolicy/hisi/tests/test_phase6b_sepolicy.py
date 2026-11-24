@@ -93,7 +93,9 @@ class Phase6BSepolicyTests(unittest.TestCase):
             "/dev/hisi_teelog": "vendor_teelog_device",
             "/dev/hwlog_dubai": "vendor_hwlog_device",
             "/dev/sensorhub": "sensors_device",
-            "/dev/hifi_misc": "audio_device",
+            "/dev/hifi_misc": "vendor_hifi_dsp_device",
+            "/dev/hi6402_hifi_misc": "vendor_hifi_dsp_device",
+            "/dev/smartpakit": "audio_device",
             "/dev/hi_vdec": "vendor_vdec_device",
             "/dev/hi_venc": "vendor_venc_device",
             "/dev/ttyAMA4": "hci_attach_dev",
@@ -691,13 +693,16 @@ class Phase6BSepolicyTests(unittest.TestCase):
 
         rules = load_file_contexts()
         self.assertEqual(resolve_type(rules, "/dev/voice_proxy_extdev"), "audio_device")
+        self.assertEqual(resolve_type(rules, "/dev/hi6402_hifi_misc"), "vendor_hifi_dsp_device")
+        self.assertEqual(resolve_type(rules, "/dev/hifi_misc"), "vendor_hifi_dsp_device")
 
         clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
         for needle in (
             "dontaudit mediacodec { default_prop config_prop }:file r_file_perms;",
             "dontaudit nfc vendor_nfc_data_file:dir search;",
             "hal_client_domain(hal_ir_default, hal_audio)",
-            "allow hal_ir_default audio_device:chr_file rw_file_perms;",
+            "allow hal_ir_default vendor_hifi_dsp_device:chr_file rw_file_perms;",
+            "allow hal_audio_default vendor_hifi_dsp_device:chr_file rw_file_perms;",
             "allow hal_ir_default { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };",
             "dontaudit hal_camera_default memtrackproxy_service:service_manager find;",
             "allow hal_fingerprint_default splashtwo_file:dir create_dir_perms;",
@@ -708,6 +713,7 @@ class Phase6BSepolicyTests(unittest.TestCase):
             self.assertIn(needle, clients_te)
 
         for forbidden_allow in (
+            r"^\s*allow\s+hal_ir_default\b.*\baudio_device\b",
             r"^\s*allow\s+mediacodec\b.*(?:default_prop|config_prop)",
             r"^\s*allow\s+hal_camera_default\b.*memtrackproxy_service",
             r"^\s*allow\s+hal_fingerprint_default\b.*default_prop",
