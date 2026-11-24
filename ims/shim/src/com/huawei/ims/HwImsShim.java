@@ -87,6 +87,7 @@ public final class HwImsShim {
     private static int sLastDdsAssignSubId = -1;
     private static final long[] sLastRadioPowerKickMs = {-100_000L, -100_000L};
     private static long sLastRafSwapMs = -100_000L;
+    private static final boolean[] sLastDisabledImsSynced = {false, false};
     static volatile ImsSwitchSender sSwitchSender = HwImsShim::sendSetImsSwitchOnce;
     static volatile long sInitialRetryDelayMs = 500L;
 
@@ -124,6 +125,8 @@ public final class HwImsShim {
         void forceRadioPowerOn(int slotId);
 
         void resyncImsSwitch(int slotId);
+
+        default void disableImsSwitch(int slotId) {}
 
         int getCallState();
 
@@ -364,6 +367,14 @@ public final class HwImsShim {
             }
 
             @Override
+            public void disableImsSwitch(int slotId) {
+                if (!SystemProperties.getBoolean("ro.config.hw_volte_on", true)) {
+                    return;
+                }
+                disableModemImsSwitch(slotId);
+            }
+
+            @Override
             public int getCallState() {
                 try {
                     TelephonyManager tm = appCtx.getSystemService(TelephonyManager.class);
@@ -411,19 +422,33 @@ public final class HwImsShim {
         synchronized (DUAL_SIM_LOCK) {
             List<SimSubSlot> subs = env.getActiveSubscriptions();
             List<SimSubSlot> enabledSubs = new ArrayList<>();
+            boolean[] slotEnabled = {false, false};
             if (subs != null) {
                 for (SimSubSlot s : subs) {
-                    if (s != null
-                            && (s.slotId == 0 || s.slotId == 1)
-                            && s.uiccAppsEnabled
-                            && env.isValidSubId(s.subId)) {
+                    if (s == null || (s.slotId != 0 && s.slotId != 1)) {
+                        continue;
+                    }
+                    if (s.uiccAppsEnabled && env.isValidSubId(s.subId)) {
                         enabledSubs.add(s);
+                        slotEnabled[s.slotId] = true;
+                        sLastDisabledImsSynced[s.slotId] = false;
+                    } else if (!s.uiccAppsEnabled && !sLastDisabledImsSynced[s.slotId]) {
+                        sLastDisabledImsSynced[s.slotId] = true;
+                        env.disableImsSwitch(s.slotId);
                     }
                 }
             }
 
             int ddsSubId = env.getDefaultDataSubId();
-            boolean ddsValid = env.isValidSubId(ddsSubId);
+            boolean ddsValid = false;
+            if (env.isValidSubId(ddsSubId)) {
+                for (SimSubSlot s : enabledSubs) {
+                    if (s.subId == ddsSubId) {
+                        ddsValid = true;
+                        break;
+                    }
+                }
+            }
             if (!ddsValid && !enabledSubs.isEmpty()) {
                 SimSubSlot chosen = enabledSubs.get(0);
                 for (SimSubSlot s : enabledSubs) {
@@ -498,8 +523,13 @@ public final class HwImsShim {
             }
             if (env.setRadioCapability(rafs)) {
                 sLastRafSwapMs = nowMs;
-                env.resyncImsSwitch(0);
-                env.resyncImsSwitch(1);
+                for (int slot = 0; slot < 2; slot++) {
+                    if (slotEnabled[slot]) {
+                        env.resyncImsSwitch(slot);
+                    } else {
+                        env.disableImsSwitch(slot);
+                    }
+                }
             }
         }
     }
@@ -514,6 +544,8 @@ public final class HwImsShim {
             sLastRadioPowerKickMs[0] = -100_000L;
             sLastRadioPowerKickMs[1] = -100_000L;
             sLastRafSwapMs = -100_000L;
+            sLastDisabledImsSynced[0] = false;
+            sLastDisabledImsSynced[1] = false;
         }
     }
 
@@ -1081,16 +1113,12 @@ public final class HwImsShim {
         }
         if (filter != null) {
             int count = filter.countActions();
-            if (count > 0) {
-                boolean allAndroidSystemActions = true;
-                for (int i = 0; i < count; i++) {
-                    String action = filter.getAction(i);
-                    if (action == null || !action.startsWith("android.")) {
-                        allAndroidSystemActions = false;
-                        break;
-                    }
-                }
-                if (allAndroidSystemActions) {
+            for (int i = 0; i < count; i++) {
+                String action = filter.getAction(i);
+                if (action != null
+                        && (action.startsWith("android.")
+                                || action.startsWith("huawei.intent.action.")
+                                || action.startsWith("com.huawei."))) {
                     return Context.RECEIVER_EXPORTED;
                 }
             }
@@ -1126,6 +1154,10 @@ public final class HwImsShim {
 
     private static final WeakHashMap<PhoneStateListener, Integer> sPhoneStateListenerSubIds =
             new WeakHashMap<>();
+    private static final WeakHashMap<PhoneStateListener, Integer> sPhoneStateListenerSlots =
+            new WeakHashMap<>();
+    private static final WeakHashMap<PhoneStateListener, Integer>
+            sPhoneStateListenerRegisteredSubIds = new WeakHashMap<>();
 
     public static void recordPhoneStateListenerSubId(PhoneStateListener listener, Integer subId) {
         if (listener == null || subId == null) {
@@ -1136,14 +1168,62 @@ public final class HwImsShim {
         }
     }
 
+    public static void recordPhoneStateListenerSlot(PhoneStateListener listener, int slotId) {
+        if (listener == null || slotId < 0) {
+            return;
+        }
+        synchronized (sPhoneStateListenerSubIds) {
+            sPhoneStateListenerSlots.put(listener, slotId);
+        }
+    }
+
+    public static int resolveSlotIndexForSubId(int subId) {
+        return subId >= 0 ? sSlotIndexResolver.applyAsInt(subId) : -1;
+    }
+
+    private static Integer extractListenerPhoneIdField(PhoneStateListener listener) {
+        for (Class<?> cls = listener.getClass(); cls != null; cls = cls.getSuperclass()) {
+            try {
+                Field f = cls.getDeclaredField("mPhoneId");
+                f.setAccessible(true);
+                Object val = f.get(listener);
+                if (val instanceof Integer) {
+                    return (Integer) val;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        return null;
+    }
+
     public static void listenPhoneState(
             TelephonyManager tm, PhoneStateListener listener, int events) {
         if (tm == null || listener == null) {
             return;
         }
-        Integer subId;
+        Integer subId = null;
         synchronized (sPhoneStateListenerSubIds) {
-            subId = sPhoneStateListenerSubIds.get(listener);
+            if (events == 0) {
+                subId = sPhoneStateListenerRegisteredSubIds.remove(listener);
+            }
+            if (subId == null || subId.intValue() < 0) {
+                subId = sPhoneStateListenerSubIds.get(listener);
+            }
+            if (subId == null || subId.intValue() < 0) {
+                Integer slotId = sPhoneStateListenerSlots.get(listener);
+                if (slotId == null || slotId.intValue() < 0) {
+                    slotId = extractListenerPhoneIdField(listener);
+                }
+                if (slotId != null && slotId.intValue() >= 0) {
+                    int resolved = sSubscriptionIdResolver.applyAsInt(slotId.intValue());
+                    if (resolved >= 0) {
+                        subId = resolved;
+                    }
+                }
+            }
+            if (events != 0 && subId != null && subId.intValue() >= 0) {
+                sPhoneStateListenerRegisteredSubIds.put(listener, subId);
+            }
         }
         TelephonyManager targetTm = tm;
         if (subId != null && subId.intValue() >= 0) {

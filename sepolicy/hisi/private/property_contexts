@@ -44,6 +44,7 @@ ro.config.hw_att_wificall        u:object_r:telephony_config_prop:s0 exact strin
 ro.config.hw_cdma_volte_isim     u:object_r:telephony_config_prop:s0 exact string
 ro.config.hw_cmcciot             u:object_r:telephony_config_prop:s0 exact string
 ro.config.hw_support_omadm       u:object_r:telephony_config_prop:s0 exact string
+ro.config.hw_uicc_sub_toggle     u:object_r:telephony_config_prop:s0 exact string
 ro.config.hw_ut_ims              u:object_r:telephony_config_prop:s0 exact string
 ro.config.hw_vilte_enhancement   u:object_r:telephony_config_prop:s0 exact string
 ro.config.hw_volte_dyn           u:object_r:telephony_config_prop:s0 exact string

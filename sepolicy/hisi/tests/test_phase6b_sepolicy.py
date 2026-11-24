@@ -624,6 +624,7 @@ class Phase6BSepolicyTests(unittest.TestCase):
         self.assertIn(["vowifi.service", "u:object_r:hivwserver_service:s0"], vndsvc)
 
         priv_prop = (POLICY / "private/property_contexts").read_text()
+        self.assertIn("ro.config.hw_uicc_sub_toggle     u:object_r:telephony_config_prop:s0 exact string", priv_prop)
         self.assertIn("ro.config.hw_vowifi              u:object_r:telephony_config_prop:s0 exact string", priv_prop)
 
         ven_prop = (VENDOR / "property_contexts").read_text()

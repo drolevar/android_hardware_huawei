@@ -26,7 +26,10 @@ def _find_android_root() -> pathlib.Path | None:
 JAVA_HARNESS = r"""
 package com.huawei.ims;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
 import android.os.SystemProperties;
 import android.telephony.CarrierConfigManager;
 import android.telephony.RadioAccessFamily;
@@ -34,6 +37,7 @@ import android.telephony.TelephonyManager;
 import android.telephony.ims.stub.ImsRegistrationImplBase;
 import com.android.internal.telephony.HwModemCapability;
 import com.huawei.android.net.wifi.WifiManagerEx;
+import com.huawei.ims.shim.MapconShim;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
@@ -43,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.IntUnaryOperator;
 import java.util.function.LongSupplier;
 
 public final class Attempt13ShimTestHarness {
@@ -73,6 +78,7 @@ public final class Attempt13ShimTestHarness {
         final List<Integer> assignedDds = new ArrayList<>();
         final List<Integer> forcedPowerSlots = new ArrayList<>();
         final List<Integer> resyncedImsSlots = new ArrayList<>();
+        final List<Integer> disabledImsSlots = new ArrayList<>();
         final List<RadioAccessFamily[]> rafCalls = new ArrayList<>();
 
         @Override
@@ -133,6 +139,11 @@ public final class Attempt13ShimTestHarness {
         @Override
         public void resyncImsSwitch(int slotId) {
             resyncedImsSlots.add(slotId);
+        }
+
+        @Override
+        public void disableImsSwitch(int slotId) {
+            disabledImsSlots.add(slotId);
         }
 
         @Override
@@ -231,6 +242,19 @@ public final class Attempt13ShimTestHarness {
         HwImsShim.reconcileDualSimState(env2, 10_000L);
         assertEquals(0, env2.forcedPowerSlots.size(), "Must not force RADIO_ON on user-disabled SIM (uiccAppsEnabled=false)");
         assertEquals(0, env2.rafCalls.size(), "Must not swap RAF during active voice call");
+
+        // Disabled DDS failover: if ddsSubId points to disabled Slot 0 while Slot 1 is enabled, reassign DDS -> Slot 1 and disable IMS on Slot 0
+        HwImsShim.resetDualSimStateForTest();
+        FakeEnv env3 = new FakeEnv();
+        env3.subs = Arrays.asList(new HwImsShim.SimSubSlot(0, 2, false), new HwImsShim.SimSubSlot(1, 3, true));
+        env3.ddsSubId = 2;
+        env3.radioOn[0] = false;
+        env3.radioOn[1] = true;
+        HwImsShim.reconcileDualSimState(env3, 15_000L);
+        assertEquals(Arrays.asList(0), env3.disabledImsSlots, "Must disable IMS switch once on user-disabled Slot 0");
+        assertEquals(Arrays.asList(3), env3.assignedDds, "Must auto-reassign DDS from disabled Slot 0 (subId=2) to enabled Slot 1 (subId=3)");
+        HwImsShim.reconcileDualSimState(env3, 16_000L);
+        assertEquals(Arrays.asList(0), env3.disabledImsSlots, "Disabled IMS switch sync must be debounced/idempotent");
     }
 
     private static void testWifiSignalStructAndHexHelpers() throws Exception {
@@ -372,11 +396,64 @@ public final class Attempt13ShimTestHarness {
                 "IWLAN and registered LTE transitions must update ImsRegistrationImplBase tech");
     }
 
+    private static void testMapconReceiverFlagsAndSlotHelpers() {
+        IntentFilter mixedFilter = new IntentFilter("android.intent.action.SIM_STATE_CHANGED");
+        mixedFilter.addAction("com.huawei.intent.action.ACTION_SUBSCRIPTION_SET_UICC_RESULT");
+        assertEquals(
+                Context.RECEIVER_EXPORTED,
+                HwImsShim.resolveDynamicReceiverFlags(mixedFilter, null),
+                "Mixed android.* + com.huawei.* filter must be RECEIVER_EXPORTED");
+
+        IntentFilter hwImsFilter = new IntentFilter("huawei.intent.action.IMS_SERVICE_STATE_CHANGED");
+        assertEquals(
+                Context.RECEIVER_EXPORTED,
+                HwImsShim.resolveDynamicReceiverFlags(hwImsFilter, null),
+                "huawei.intent.action.* filter must be RECEIVER_EXPORTED");
+
+        IntentFilter privateFilter = new IntentFilter("com.hisi.mapcon.internal");
+        assertEquals(
+                Context.RECEIVER_NOT_EXPORTED,
+                HwImsShim.resolveDynamicReceiverFlags(privateFilter, null),
+                "Private com.hisi.* filter without permission must remain RECEIVER_NOT_EXPORTED");
+
+        IntUnaryOperator origSlotResolver = HwImsShim.sSlotIndexResolver;
+        try {
+            HwImsShim.sSlotIndexResolver = subId -> (subId == 1 ? 0 : (subId == 2 ? 1 : -1));
+
+            Intent slotIdxIntent = new Intent();
+            slotIdxIntent.putExtra("android.telephony.extra.SLOT_INDEX", 1);
+            slotIdxIntent.putExtra("phone", 0);
+            assertEquals(1, MapconShim.extractSimSlotIndex(slotIdxIntent, 0), "SLOT_INDEX must beat phone extra");
+
+            Intent subIdxIntent = new Intent();
+            subIdxIntent.putExtra("android.telephony.extra.SUBSCRIPTION_INDEX", 2);
+            assertEquals(1, MapconShim.extractSimSlotIndex(subIdxIntent, 0), "SUBSCRIPTION_INDEX fallback via HwImsShim resolver");
+
+            Bundle imsSlot1Extras = new Bundle();
+            imsSlot1Extras.putInt("slot", 1);
+            imsSlot1Extras.putInt("subId", 1);
+            assertEquals(
+                    1,
+                    MapconShim.extractImsStatePhoneId(imsSlot1Extras),
+                    "extractImsStatePhoneId must prefer slot=1 over resolving ambiguous subId=1");
+
+            Bundle imsSubOnlyExtras = new Bundle();
+            imsSubOnlyExtras.putInt("subId", 2);
+            assertEquals(
+                    1,
+                    MapconShim.extractImsStatePhoneId(imsSubOnlyExtras),
+                    "extractImsStatePhoneId subId fallback when slot absent");
+        } finally {
+            HwImsShim.sSlotIndexResolver = origSlotResolver;
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         testModemCapabilityBit21();
         testDualSimUnsetDdsAndHotplugAndRafSwap();
         testWifiSignalStructAndHexHelpers();
         testCarrierConfigAndRegTechHelpers();
+        testMapconReceiverFlagsAndSlotHelpers();
         System.out.println("ATTEMPT13_SHIM_TESTS_OK");
     }
 }
@@ -447,16 +524,55 @@ class Attempt13ShimHostTests(unittest.TestCase):
                 "import java.util.Map;\n"
                 "public class Intent {\n"
                 "    public static final String ACTION_AIRPLANE_MODE_CHANGED = \"android.intent.action.AIRPLANE_MODE\";\n"
+                "    private String action;\n"
                 "    private final Map<String, Integer> intExtras = new HashMap<>();\n"
-                "    public boolean hasExtra(String name) { return intExtras.containsKey(name); }\n"
+                "    private final Map<String, String> strExtras = new HashMap<>();\n"
+                "    public Intent() {}\n"
+                "    public Intent(String action) { this.action = action; }\n"
+                "    public String getAction() { return action; }\n"
+                "    public boolean hasExtra(String name) { return intExtras.containsKey(name) || strExtras.containsKey(name); }\n"
                 "    public int getIntExtra(String name, int def) {\n"
                 "        Integer v = intExtras.get(name);\n"
                 "        return v != null ? v.intValue() : def;\n"
                 "    }\n"
+                "    public String getStringExtra(String name) { return strExtras.get(name); }\n"
                 "    public Intent putExtra(String name, int value) {\n"
                 "        intExtras.put(name, value);\n"
                 "        return this;\n"
                 "    }\n"
+                "    public Intent putExtra(String name, String value) {\n"
+                "        strExtras.put(name, value);\n"
+                "        return this;\n"
+                "    }\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (intent_src / "IntentFilter.java").write_text(
+                "package android.content;\n"
+                "import java.util.ArrayList;\n"
+                "import java.util.List;\n"
+                "public class IntentFilter {\n"
+                "    private final List<String> actions = new ArrayList<>();\n"
+                "    public IntentFilter() {}\n"
+                "    public IntentFilter(String action) { if (action != null) actions.add(action); }\n"
+                "    public void addAction(String action) { if (action != null) actions.add(action); }\n"
+                "    public int countActions() { return actions.size(); }\n"
+                "    public String getAction(int i) { return actions.get(i); }\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (sysprop_src / "Bundle.java").write_text(
+                "package android.os;\n"
+                "import java.util.HashMap;\n"
+                "import java.util.Map;\n"
+                "public class Bundle {\n"
+                "    private final Map<String, Integer> intExtras = new HashMap<>();\n"
+                "    public boolean containsKey(String key) { return intExtras.containsKey(key); }\n"
+                "    public int getInt(String key, int def) {\n"
+                "        Integer v = intExtras.get(key);\n"
+                "        return v != null ? v.intValue() : def;\n"
+                "    }\n"
+                "    public void putInt(String key, int val) { intExtras.put(key, val); }\n"
                 "}\n",
                 encoding="utf-8",
             )
@@ -521,8 +637,10 @@ class Attempt13ShimHostTests(unittest.TestCase):
                     "-d",
                     str(shim_cls),
                     str(sysprop_src / "SystemProperties.java"),
+                    str(sysprop_src / "Bundle.java"),
                     str(log_src / "Log.java"),
                     str(intent_src / "Intent.java"),
+                    str(intent_src / "IntentFilter.java"),
                     str(ccm_src / "CarrierConfigManager.java"),
                     str(reg_src / "ImsRegistrationImplBase.java"),
                     str(harness_src),
