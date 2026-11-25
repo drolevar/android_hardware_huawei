@@ -4,7 +4,8 @@
 //
 
 java_library {
-    name: "androidx.camera.extensions.impl",
+    name: "androidx.camera.extensions.impl.blanc",
+    stem: "androidx.camera.extensions.impl",
     installable: true,
     srcs: ["src/**/*.java"],
     sdk_version: "current",
