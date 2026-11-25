@@ -1,0 +1,306 @@
+#include "blanc_scene_policy.h"
+
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <optional>
+#include <vector>
+
+namespace {
+
+using blanc::camera::ClassifySession;
+using blanc::camera::ComputeEffectiveZoom;
+using blanc::camera::kBufferUsageVideoEncoder;
+using blanc::camera::kPixelFormatBlob;
+using blanc::camera::kPixelFormatImplementationDefined;
+using blanc::camera::kPixelFormatRaw16;
+using blanc::camera::kPixelFormatRawOpaque;
+using blanc::camera::kRequestTemplatePreview;
+using blanc::camera::kRequestTemplateStillCapture;
+using blanc::camera::kRequestTemplateVideoRecord;
+using blanc::camera::kRequestTemplateVideoSnapshot;
+using blanc::camera::kTagApertureMode;
+using blanc::camera::kTagCameraSceneMode;
+using blanc::camera::kTagCameraSessionSceneMode;
+using blanc::camera::kTagDualSensorMode;
+using blanc::camera::kTagFaceBeautyMode;
+using blanc::camera::kTagHwZoomIn;
+using blanc::camera::kTagOpticalZoomMode;
+using blanc::camera::kTagPortraitMode;
+using blanc::camera::kTagSensorHdrMode;
+using blanc::camera::MetadataOrigin;
+using blanc::camera::RewriteMetadata;
+using blanc::camera::SessionPolicy;
+using blanc::camera::StreamDesc;
+using blanc::camera::TagMap;
+using blanc::camera::TagType;
+using blanc::camera::TagValue;
+
+void test_raw16_and_raw_opaque_hard_bypass() {
+  for (int32_t raw_fmt : {kPixelFormatRaw16, kPixelFormatRawOpaque}) {
+    std::vector<StreamDesc> streams = {
+        {kPixelFormatImplementationDefined, 0, 1440, 1080},
+        {kPixelFormatBlob, 0, 3968, 2976},
+        {raw_fmt, 0, 3968, 2976},
+    };
+    SessionPolicy session = ClassifySession(0, streams, 3968.0f);
+    assert(session.has_raw16);
+
+    TagMap session_tags;
+    bool mutated_session = RewriteMetadata(
+        &session, MetadataOrigin::kSessionParameters, false,
+        kRequestTemplateStillCapture, {15, 30}, 2.0f, {992, 744, 1984, 1488},
+        true, &session_tags);
+    assert(!mutated_session);
+    assert(session_tags.empty());
+
+    TagMap req_tags;
+    bool mutated_req = RewriteMetadata(
+        &session, MetadataOrigin::kCaptureRequest, false,
+        kRequestTemplateStillCapture, {15, 30}, 2.0f, {992, 744, 1984, 1488},
+        true, &req_tags);
+    assert(!mutated_req);
+    assert(req_tags.empty());
+  }
+}
+
+void test_default_photo_injects_colorfusion_session_and_request() {
+  std::vector<StreamDesc> streams = {
+      {kPixelFormatImplementationDefined, 0, 1440, 1080},
+      {kPixelFormatBlob, 0, 3968, 2976},
+  };
+  SessionPolicy session = ClassifySession(0, streams, 3968.0f);
+  assert(!session.has_raw16);
+  assert(!session.is_video);
+
+  // Absent scene mode on sessionParameters.
+  TagMap session_tags;
+  bool mutated = RewriteMetadata(
+      &session, MetadataOrigin::kSessionParameters, false,
+      kRequestTemplatePreview, {15, 30}, std::nullopt, {0, 0, 3968, 2976},
+      true, &session_tags);
+  assert(mutated);
+  assert(session_tags.at(kTagCameraSessionSceneMode).type == TagType::kInt32);
+  assert(session_tags.at(kTagCameraSessionSceneMode).int32_val == 0);
+  assert(session_tags.at(kTagCameraSceneMode).int32_val == 0);
+  assert(session_tags.at(kTagDualSensorMode).type == TagType::kByte);
+  assert(session_tags.at(kTagDualSensorMode).byte_val == 3);
+  assert(session_tags.at(kTagOpticalZoomMode).type == TagType::kByte);
+  assert(session_tags.at(kTagOpticalZoomMode).byte_val == 0);
+
+  // -1 and 10000 (THIRD_PARTY) on capture requests also upgrade to colorfusion.
+  for (int32_t fallback_scene : {-1, 10000}) {
+    TagMap req_tags;
+    req_tags[kTagCameraSceneMode] = TagValue::Int32(fallback_scene);
+    bool req_mutated = RewriteMetadata(
+        &session, MetadataOrigin::kCaptureRequest, false,
+        kRequestTemplateStillCapture, {15, 30}, 1.0f, {0, 0, 3968, 2976},
+        true, &req_tags);
+    assert(req_mutated);
+    assert(req_tags.at(kTagCameraSessionSceneMode).int32_val == 0);
+    assert(req_tags.at(kTagCameraSceneMode).int32_val == 0);
+    assert(req_tags.at(kTagDualSensorMode).byte_val == 3);
+    assert(req_tags.at(kTagOpticalZoomMode).byte_val == 0);
+  }
+}
+
+void test_explicit_extension_scene_preserved() {
+  std::vector<StreamDesc> streams = {
+      {kPixelFormatImplementationDefined, 0, 1440, 1080},
+      {kPixelFormatBlob, 0, 3968, 2976},
+  };
+  for (int32_t ext_scene : {5, 7, 16, 19, 23}) {
+    SessionPolicy session = ClassifySession(0, streams, 3968.0f);
+    TagMap tags;
+    tags[kTagCameraSessionSceneMode] = TagValue::Int32(ext_scene);
+    tags[kTagCameraSceneMode] = TagValue::Int32(ext_scene);
+    tags[kTagDualSensorMode] = TagValue::Byte(3);
+    if (ext_scene == 5) {
+      tags[kTagSensorHdrMode] = TagValue::Byte(1);
+    } else if (ext_scene == 16) {
+      tags[kTagFaceBeautyMode] = TagValue::Byte(1);
+    } else if (ext_scene == 19 || ext_scene == 23) {
+      tags[kTagApertureMode] = TagValue::Byte(1);
+      tags[kTagPortraitMode] = TagValue::Byte(1);
+    }
+
+    RewriteMetadata(&session, MetadataOrigin::kCaptureRequest, false,
+                    kRequestTemplateStillCapture, {15, 30}, 1.0f,
+                    {0, 0, 3968, 2976}, true, &tags);
+    assert(tags.at(kTagCameraSceneMode).int32_val == ext_scene);
+    assert(tags.at(kTagCameraSessionSceneMode).int32_val == ext_scene);
+    assert(tags.at(kTagDualSensorMode).byte_val == 3);
+    if (ext_scene == 5) {
+      assert(tags.at(kTagSensorHdrMode).byte_val == 1);
+    } else if (ext_scene == 16) {
+      assert(tags.at(kTagFaceBeautyMode).byte_val == 1);
+    } else if (ext_scene == 19 || ext_scene == 23) {
+      assert(tags.at(kTagApertureMode).byte_val == 1);
+      assert(tags.at(kTagPortraitMode).byte_val == 1);
+    }
+  }
+}
+
+void test_hybrid_zoom_from_zoom_ratio_and_crop_region() {
+  std::vector<StreamDesc> streams = {
+      {kPixelFormatImplementationDefined, 0, 1440, 1080},
+      {kPixelFormatBlob, 0, 3968, 2976},
+  };
+  for (int32_t scene : {0, 5}) {
+    SessionPolicy session = ClassifySession(0, streams, 3968.0f);
+
+    // 2.0x via CONTROL_ZOOM_RATIO.
+    TagMap tags_ratio;
+    if (scene == 5) {
+      tags_ratio[kTagCameraSceneMode] = TagValue::Int32(5);
+    }
+    bool m1 = RewriteMetadata(
+        &session, MetadataOrigin::kCaptureRequest, false,
+        kRequestTemplateStillCapture, {15, 30}, 2.0f, {0, 0, 3968, 2976},
+        true, &tags_ratio);
+    assert(m1);
+    assert(tags_ratio.at(kTagOpticalZoomMode).byte_val == 1);
+    assert(tags_ratio.at(kTagDualSensorMode).byte_val == 3);
+    assert(tags_ratio.at(kTagHwZoomIn).type == TagType::kFloat);
+    assert(std::fabs(tags_ratio.at(kTagHwZoomIn).float_val - 2.0f) < 1e-4f);
+
+    // 2.0x via ZoomRatioMapper-translated SCALER_CROP_REGION (control_zoom_ratio absent).
+    TagMap tags_crop;
+    if (scene == 5) {
+      tags_crop[kTagCameraSceneMode] = TagValue::Int32(5);
+    }
+    bool m2 = RewriteMetadata(
+        &session, MetadataOrigin::kCaptureRequest, false,
+        kRequestTemplatePreview, {15, 30}, std::nullopt, {992, 744, 1984, 1488},
+        true, &tags_crop);
+    assert(m2);
+    assert(tags_crop.at(kTagOpticalZoomMode).byte_val == 1);
+    assert(tags_crop.at(kTagDualSensorMode).byte_val == 3);
+    assert(std::fabs(tags_crop.at(kTagHwZoomIn).float_val - 2.0f) < 1e-4f);
+
+    // Zoom back to 1.0x -> opticalZoomMode resets to 0.
+    TagMap tags_back;
+    if (scene == 5) {
+      tags_back[kTagCameraSceneMode] = TagValue::Int32(5);
+    }
+    bool m3 = RewriteMetadata(
+        &session, MetadataOrigin::kCaptureRequest, false,
+        kRequestTemplatePreview, {15, 30}, 1.0f, {0, 0, 3968, 2976},
+        true, &tags_back);
+    assert(m3);
+    assert(tags_back.at(kTagOpticalZoomMode).byte_val == 0);
+    assert(std::fabs(tags_back.at(kTagHwZoomIn).float_val - 1.0f) < 1e-4f);
+  }
+}
+
+void test_empty_repeating_delta_settings_preserved() {
+  std::vector<StreamDesc> streams = {
+      {kPixelFormatImplementationDefined, 0, 1440, 1080},
+      {kPixelFormatBlob, 0, 3968, 2976},
+  };
+  SessionPolicy session = ClassifySession(0, streams, 3968.0f);
+  TagMap empty_delta;
+  bool mutated = RewriteMetadata(
+      &session, MetadataOrigin::kCaptureRequest, /*is_empty_delta_buffer=*/true,
+      kRequestTemplatePreview, {}, std::nullopt, {}, true, &empty_delta);
+  assert(!mutated);
+  assert(empty_delta.empty());
+}
+
+void test_zero_or_malformed_crop_region_does_not_nan_or_zoom() {
+  for (const auto& bad_crop : std::vector<std::vector<int32_t>>{
+           {0, 0, 0, 0},
+           {0, 0, -10, 100},
+           {0, 0, 1984, 0},
+           {10, 20},
+           {},
+       }) {
+    float z = ComputeEffectiveZoom(std::nullopt, bad_crop, 3968.0f);
+    assert(std::isfinite(z));
+    assert(std::fabs(z - 1.0f) < 1e-6f);
+
+    SessionPolicy session = ClassifySession(
+        0, {{kPixelFormatImplementationDefined, 0, 1440, 1080}}, 3968.0f);
+    TagMap tags;
+    RewriteMetadata(&session, MetadataOrigin::kCaptureRequest, false,
+                    kRequestTemplatePreview, {15, 30}, std::nullopt, bad_crop,
+                    true, &tags);
+    assert(tags.at(kTagOpticalZoomMode).byte_val == 0);
+  }
+}
+
+void test_vendor_tag_wire_types_and_video_front_bypass() {
+  // Exact wire types.
+  SessionPolicy photo_session = ClassifySession(
+      0,
+      {{kPixelFormatImplementationDefined, 0, 1440, 1080},
+       {kPixelFormatBlob, 0, 3968, 2976}},
+      3968.0f);
+  TagMap photo_tags;
+  RewriteMetadata(&photo_session, MetadataOrigin::kCaptureRequest, false,
+                  kRequestTemplateStillCapture, {15, 30}, 2.0f,
+                  {992, 744, 1984, 1488}, true, &photo_tags);
+  assert(photo_tags.at(kTagDualSensorMode).type == TagType::kByte);
+  assert(photo_tags.at(kTagOpticalZoomMode).type == TagType::kByte);
+  assert(photo_tags.at(kTagCameraSceneMode).type == TagType::kInt32);
+  assert(photo_tags.at(kTagCameraSessionSceneMode).type == TagType::kInt32);
+  assert(photo_tags.at(kTagHwZoomIn).type == TagType::kFloat);
+
+  // Video stream usage (0x10000) bypass.
+  SessionPolicy video_stream_session = ClassifySession(
+      0,
+      {{kPixelFormatImplementationDefined, kBufferUsageVideoEncoder, 1920, 1080}},
+      3968.0f);
+  assert(video_stream_session.is_video);
+  TagMap vtags1;
+  assert(!RewriteMetadata(&video_stream_session, MetadataOrigin::kCaptureRequest,
+                          false, kRequestTemplatePreview, {30, 30}, 2.0f, {},
+                          true, &vtags1));
+  assert(vtags1.empty());
+
+  // Video templates (VIDEO_RECORD / VIDEO_SNAPSHOT) bypass even without usage flag.
+  for (int32_t tmpl : {kRequestTemplateVideoRecord, kRequestTemplateVideoSnapshot}) {
+    SessionPolicy s = ClassifySession(
+        0, {{kPixelFormatImplementationDefined, 0, 1920, 1080}}, 3968.0f);
+    TagMap vtags2;
+    assert(!RewriteMetadata(&s, MetadataOrigin::kCaptureRequest, false, tmpl,
+                            {30, 30}, 2.0f, {}, true, &vtags2));
+    assert(vtags2.empty());
+  }
+
+  // High FPS (> 30 fps) bypass.
+  SessionPolicy hfps_session = ClassifySession(
+      0, {{kPixelFormatImplementationDefined, 0, 1920, 1080}}, 3968.0f);
+  TagMap hfps_tags;
+  assert(!RewriteMetadata(&hfps_session, MetadataOrigin::kCaptureRequest, false,
+                          kRequestTemplatePreview, {60, 60}, 2.0f, {}, true,
+                          &hfps_tags));
+  assert(hfps_tags.empty());
+
+  // Front Camera 1 never receives dualSensorMode = 3 or opticalZoomMode = 1.
+  SessionPolicy front_session = ClassifySession(
+      1,
+      {{kPixelFormatImplementationDefined, 0, 1440, 1080},
+       {kPixelFormatBlob, 0, 3264, 2448}},
+      3264.0f);
+  TagMap front_tags;
+  assert(!RewriteMetadata(&front_session, MetadataOrigin::kCaptureRequest, false,
+                          kRequestTemplateStillCapture, {15, 30}, 2.0f,
+                          {816, 612, 1632, 1224}, true, &front_tags));
+  assert(front_tags.count(kTagDualSensorMode) == 0);
+  assert(front_tags.count(kTagOpticalZoomMode) == 0);
+}
+
+}  // namespace
+
+int main() {
+  test_raw16_and_raw_opaque_hard_bypass();
+  test_default_photo_injects_colorfusion_session_and_request();
+  test_explicit_extension_scene_preserved();
+  test_hybrid_zoom_from_zoom_ratio_and_crop_region();
+  test_empty_repeating_delta_settings_preserved();
+  test_zero_or_malformed_crop_region_does_not_nan_or_zoom();
+  test_vendor_tag_wire_types_and_video_front_bypass();
+  std::printf("ALL 7 POLICY TESTS PASSED\n");
+  return 0;
+}

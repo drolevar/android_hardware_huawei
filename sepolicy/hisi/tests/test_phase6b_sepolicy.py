@@ -739,6 +739,13 @@ class Phase6BSepolicyTests(unittest.TestCase):
         clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
         self.assertIn("set_prop(hal_wifi_default, vendor_wlan_prop)", clients_te)
 
+    def test_attempt26_camera_sysfs_thermal_sepolicy(self):
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        self.assertIn("r_dir_file(hal_camera_default, sysfs_thermal)", clients_te)
+        self.assertIsNone(
+            re.search(r"^\s*allow\s+hal_camera_default\b.*\bsysfs_thermal\b.*\bw_file_perms\b", clients_te, re.M)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

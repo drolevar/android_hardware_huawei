@@ -1,0 +1,37 @@
+//
+// SPDX-FileCopyrightText: 2026 The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+cc_library_shared {
+    name: "hicam.hal.service",
+    soc_specific: true,
+    relative_install_path: "hw",
+    compile_multilib: "64",
+    srcs: [
+        "blanc_scene_policy.cpp",
+        "hicam_hal_service_shim.cpp",
+    ],
+    shared_libs: [
+        "android.hardware.camera.common@1.0",
+        "android.hardware.camera.device@1.0",
+        "android.hardware.camera.device@3.2",
+        "android.hardware.camera.device@3.3",
+        "android.hardware.camera.device@3.4",
+        "android.hardware.camera.provider@2.4",
+        "android.hardware.camera.provider@2.5",
+        "libcamera_metadata",
+        "libcutils",
+        "libdl",
+        "libfmq",
+        "libhidlbase",
+        "liblog",
+        "libutils",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fvisibility=hidden",
+    ],
+}

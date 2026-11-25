@@ -1,0 +1,20 @@
+//
+// SPDX-FileCopyrightText: 2026 The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+java_library {
+    name: "androidx.camera.extensions.impl",
+    installable: true,
+    srcs: ["src/**/*.java"],
+    sdk_version: "current",
+    vendor: true,
+}
+
+prebuilt_etc {
+    name: "huawei_blanc_camera_extensions.xml",
+    src: "camera_extensions.xml",
+    filename: "camera_extensions.xml",
+    sub_dir: "permissions",
+    vendor: true,
+}

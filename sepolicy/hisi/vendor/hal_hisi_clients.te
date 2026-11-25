@@ -194,6 +194,7 @@ allow hal_camera_default vendor_data_file:dir search;
 allow hal_camera_default { vendor_camera_data_file vendor_logcat_data_file }:dir create_dir_perms;
 allow hal_camera_default { vendor_camera_data_file vendor_logcat_data_file }:file create_file_perms;
 r_dir_file(hal_camera_default, { sysfs_pg sysfs_camerafs sysfs_huawei_sensor sysfs_leds sysfs_devfreq_dir })
+r_dir_file(hal_camera_default, sysfs_thermal)
 allow { hal_camera_default vendor_hal_hisi_hwfactoryinterface_default } sysfs_hisi_boardname:file r_file_perms;
 allow hal_camera_default { proc_hisi_ddr_info proc_meminfo }:file r_file_perms;
 allow hal_camera_default sysfs_pg:file w_file_perms;
