@@ -10,7 +10,6 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.util.Pair;
 import android.util.Size;
 
-import java.util.Collections;
 import java.util.List;
 
 abstract class BaseHuaweiPreviewExtender implements PreviewExtenderImpl {
@@ -61,7 +60,7 @@ abstract class BaseHuaweiPreviewExtender implements PreviewExtenderImpl {
 
     @Override
     public CaptureStageImpl onDisableSession() {
-        return new SimpleCaptureStage(STAGE_ID, Collections.emptyList());
+        return null;
     }
 
     @Override

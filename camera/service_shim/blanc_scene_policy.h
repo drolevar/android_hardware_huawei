@@ -51,6 +51,7 @@ constexpr int32_t kPixelFormatImplementationDefined = 0x22;
 constexpr int32_t kPixelFormatYCbCr420_888 = 0x23;
 constexpr int32_t kPixelFormatRawOpaque = 0x24;
 constexpr uint64_t kBufferUsageVideoEncoder = 0x10000ULL;
+constexpr uint32_t kStreamConfigModeConstrainedHighSpeed = 1U;
 
 // ANDROID_CONTROL_CAPTURE_INTENT / RequestTemplate values.
 constexpr int32_t kRequestTemplatePreview = 1;
@@ -104,7 +105,8 @@ enum class MetadataOrigin : uint8_t {
 
 SessionPolicy ClassifySession(int camera_id,
                               const std::vector<StreamDesc>& streams,
-                              float active_array_width = 3968.0f);
+                              float active_array_width = 3968.0f,
+                              uint32_t operation_mode = 0U);
 
 float ComputeEffectiveZoom(std::optional<float> control_zoom_ratio,
                            const std::vector<int32_t>& scaler_crop_region,

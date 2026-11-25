@@ -69,7 +69,7 @@ abstract class BaseHuaweiImageCaptureExtender implements ImageCaptureExtenderImp
 
     @Override
     public CaptureStageImpl onDisableSession() {
-        return new SimpleCaptureStage(STAGE_ID, Collections.emptyList());
+        return null;
     }
 
     @Override

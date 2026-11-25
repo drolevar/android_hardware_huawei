@@ -121,12 +121,16 @@ public final class HuaweiExtensionsHostTest {
                         "Expected null getSupportedResolutions() (full stream table)");
                 assertTrue(ext.onPresetSession() != null, "Expected non-null onPresetSession");
                 assertTrue(ext.onEnableSession() != null, "Expected non-null onEnableSession");
+                assertTrue(ext.onDisableSession() == null,
+                        "Expected null onDisableSession to avoid spurious scene=0 capture on close");
                 assertTrue(ext.getCaptureStage() != null, "Expected non-null getCaptureStage");
                 ext.onDeInit();
             }
             for (ImageCaptureExtenderImpl ext : createImageExtenders()) {
                 ext.init(camId, chars);
                 ext.onInit(camId, chars, null);
+                assertTrue(ext.onDisableSession() == null,
+                        "Expected null ImageCapture onDisableSession");
                 assertTrue(ext.getCaptureProcessor() == null,
                         "Expected null CaptureProcessorImpl for zero-copy hardware JPEG");
                 assertTrue(ext.getMaxCaptureStage() == 1, "Expected getMaxCaptureStage() == 1");

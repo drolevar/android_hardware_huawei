@@ -16,7 +16,6 @@
 #include <android/hardware/camera/device/3.4/ICameraDeviceSession.h>
 #include <android/hardware/camera/provider/2.4/ICameraProvider.h>
 #include <android/hardware/camera/provider/2.4/ICameraProviderCallback.h>
-#include <android/hardware/camera/provider/2.5/ICameraProvider.h>
 #include <dlfcn.h>
 #include <fmq/MessageQueue.h>
 #include <hidl/MQDescriptor.h>
@@ -67,7 +66,6 @@ namespace V3_2 = ::android::hardware::camera::device::V3_2;
 namespace V3_3 = ::android::hardware::camera::device::V3_3;
 namespace V3_4 = ::android::hardware::camera::device::V3_4;
 namespace V2_4 = ::android::hardware::camera::provider::V2_4;
-namespace V2_5 = ::android::hardware::camera::provider::V2_5;
 
 using RequestMetadataQueue = MessageQueue<uint8_t, kSynchronizedReadWrite>;
 constexpr size_t kDefaultRequestFmqBytes = 1ULL << 20;  // 1 MiB
@@ -261,46 +259,11 @@ bool RewriteMetadataBytes(SessionPolicy* session,
   }
 
   if (src_len == 0 || src_bytes == nullptr) {
-    if (origin == MetadataOrigin::kCaptureRequest) {
-      TagMap dummy;
-      return RewriteMetadata(session, origin, /*is_empty_delta_buffer=*/true,
-                             blanc::camera::kRequestTemplatePreview, {},
-                             std::nullopt, {}, /*uses_hw_zoom_in_float=*/true,
-                             &dummy, tag_ids);
-    }
-    // Empty sessionParams on Camera 0 still/preview session: synthesize initial
-    // colorfusion sessionParameters so HISP160 starts in scene 0 + dualSensorMode 3.
-    TagMap tags;
-    if (!RewriteMetadata(session, MetadataOrigin::kSessionParameters,
-                         /*is_empty_delta_buffer=*/false,
-                         blanc::camera::kRequestTemplatePreview, {},
-                         std::nullopt, {}, /*uses_hw_zoom_in_float=*/true,
-                         &tags, tag_ids)) {
-      return false;
-    }
-    camera_metadata_t* dst = allocate_camera_metadata(tags.size() + 4, 128);
-    if (dst == nullptr) {
-      return false;
-    }
-    bool ok = true;
-    for (const auto& [tid, tv] : tags) {
-      ok &= UpsertMetadataEntry(dst, tid, tv);
-    }
-    if (!ok) {
-      free_camera_metadata(dst);
-      return false;
-    }
-    sort_camera_metadata(dst);
-    const size_t compact_sz = get_camera_metadata_compact_size(dst);
-    out_rewritten->resize(compact_sz);
-    if (copy_camera_metadata(out_rewritten->data(), compact_sz, dst) ==
-        nullptr) {
-      free_camera_metadata(dst);
-      out_rewritten->clear();
-      return false;
-    }
-    free_camera_metadata(dst);
-    return true;
+    TagMap dummy;
+    return RewriteMetadata(session, origin, /*is_empty_delta_buffer=*/true,
+                           blanc::camera::kRequestTemplatePreview, {},
+                           std::nullopt, {}, /*uses_hw_zoom_in_float=*/true,
+                           &dummy, tag_ids);
   }
 
   const auto* raw_meta = reinterpret_cast<const camera_metadata_t*>(src_bytes);
@@ -456,7 +419,9 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
         descs.push_back({static_cast<int32_t>(s.format),
                          static_cast<uint64_t>(s.usage), s.width, s.height});
       }
-      session_ = ClassifySession(camera_id_, descs, active_array_width_);
+      session_ = ClassifySession(
+          camera_id_, descs, active_array_width_,
+          static_cast<uint32_t>(requestedConfiguration.operationMode));
     }
     return real_3_2_->configureStreams(requestedConfiguration, _hidl_cb);
   }
@@ -476,7 +441,9 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
         descs.push_back({static_cast<int32_t>(s.format),
                          static_cast<uint64_t>(s.usage), s.width, s.height});
       }
-      session_ = ClassifySession(camera_id_, descs, active_array_width_);
+      session_ = ClassifySession(
+          camera_id_, descs, active_array_width_,
+          static_cast<uint32_t>(requestedConfiguration.operationMode));
     }
     return real_3_3_->configureStreams_3_3(requestedConfiguration, _hidl_cb);
   }
@@ -499,7 +466,9 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
                          static_cast<uint64_t>(s.v3_2.usage), s.v3_2.width,
                          s.v3_2.height});
       }
-      session_ = ClassifySession(camera_id_, descs, active_array_width_);
+      session_ = ClassifySession(
+          camera_id_, descs, active_array_width_,
+          static_cast<uint32_t>(requestedConfiguration.operationMode));
       if (!session_.has_raw16 && !session_.is_video &&
           session_.camera_id == 0) {
         use_rewritten = RewriteMetadataBytes(
@@ -813,11 +782,10 @@ class BlancCameraDevice final : public V3_2::ICameraDevice {
   bool active_array_cached_ = false;
 };
 
-class BlancCameraProvider final : public V2_5::ICameraProvider {
+class BlancCameraProvider final : public V2_4::ICameraProvider {
  public:
-  BlancCameraProvider(sp<V2_4::ICameraProvider> real_2_4,
-                      sp<V2_5::ICameraProvider> real_2_5)
-      : real_2_4_(std::move(real_2_4)), real_2_5_(std::move(real_2_5)) {
+  explicit BlancCameraProvider(sp<V2_4::ICameraProvider> real_2_4)
+      : real_2_4_(std::move(real_2_4)) {
     real_2_4_->getVendorTags(
         [this](Status status, const hidl_vec<VendorTagSection>& sections) {
           if (status == Status::OK) {
@@ -886,17 +854,8 @@ class BlancCameraProvider final : public V2_5::ICameraProvider {
         });
   }
 
-  Return<void> notifyDeviceStateChange(
-      ::android::hardware::hidl_bitfield<V2_5::DeviceState> newState) override {
-    if (real_2_5_ != nullptr) {
-      return real_2_5_->notifyDeviceStateChange(newState);
-    }
-    return Void();
-  }
-
  private:
   sp<V2_4::ICameraProvider> real_2_4_;
-  sp<V2_5::ICameraProvider> real_2_5_;
   std::mutex lock_;
   VendorTagIds tag_ids_;
   bool tags_resolved_ = false;
@@ -911,7 +870,7 @@ struct BzServiceContext {
 std::mutex g_service_mutex;
 std::shared_ptr<void> g_logger;
 BzServiceContext* g_active_ctx = nullptr;
-sp<V2_5::ICameraProvider> g_provider_proxy;
+sp<V2_4::ICameraProvider> g_provider_proxy;
 
 }  // namespace
 
@@ -980,7 +939,7 @@ extern "C" __attribute__((visibility("default"))) void initHalService(
 
   // Extract the unregistered V2_4::ICameraProvider* from runner + 8 before
   // invoking runner's deleting destructor (vtable[1]), then register our
-  // V2_5::ICameraProvider interposer as "legacy/0".
+  // V2_4::ICameraProvider interposer as "legacy/0" (matching VINTF @2.4).
   auto* raw_provider_2_4 = *reinterpret_cast<V2_4::ICameraProvider**>(
       reinterpret_cast<char*>(runner_raw) + sizeof(void*));
   if (raw_provider_2_4 == nullptr) {
@@ -999,17 +958,12 @@ extern "C" __attribute__((visibility("default"))) void initHalService(
     runner_raw = nullptr;
   }
 
-  sp<V2_5::ICameraProvider> real_2_5;
-  auto cast_2_5 = V2_5::ICameraProvider::castFrom(real_2_4);
-  if (cast_2_5.isOk()) {
-    real_2_5 = cast_2_5;
-  }
-
-  sp<V2_5::ICameraProvider> proxy =
-      new BlancCameraProvider(real_2_4, real_2_5);
+  sp<V2_4::ICameraProvider> proxy = new BlancCameraProvider(real_2_4);
   const ::android::status_t reg_status = proxy->registerAsService("legacy/0");
   if (reg_status != ::android::OK) {
     ALOGE("initHalService: registerAsService(legacy/0) failed: %d", reg_status);
+    proxy.clear();
+    real_2_4.clear();
     dlclose(ctx->bz_dlhandle);
     delete ctx;
     return;
@@ -1020,6 +974,5 @@ extern "C" __attribute__((visibility("default"))) void initHalService(
     g_provider_proxy = proxy;
     g_active_ctx = ctx;
   }
-  ALOGI("BlancCameraProvider interposer registered as legacy/0 (@2.5=%d)",
-        real_2_5 != nullptr ? 1 : 0);
+  ALOGI("BlancCameraProvider interposer registered as @2.4 legacy/0");
 }

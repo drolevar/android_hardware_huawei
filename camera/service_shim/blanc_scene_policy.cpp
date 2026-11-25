@@ -38,7 +38,8 @@ bool HasHighFps(const std::vector<int32_t>& ae_target_fps_range) {
 
 SessionPolicy ClassifySession(int camera_id,
                               const std::vector<StreamDesc>& streams,
-                              float active_array_width) {
+                              float active_array_width,
+                              uint32_t operation_mode) {
   SessionPolicy policy;
   policy.camera_id = camera_id;
   policy.active_array_width =
@@ -46,6 +47,9 @@ SessionPolicy ClassifySession(int camera_id,
           ? active_array_width
           : 3968.0f;
   policy.last_zoom_ratio = 1.0f;
+  if (operation_mode == kStreamConfigModeConstrainedHighSpeed) {
+    policy.is_video = true;
+  }
 
   for (const StreamDesc& s : streams) {
     if (s.format == kPixelFormatRaw16 || s.format == kPixelFormatRawOpaque) {
@@ -99,8 +103,9 @@ bool RewriteMetadata(SessionPolicy* session,
     return false;
   }
 
-  // Preserve 0-byte repeating delta requests verbatim.
-  if (origin == MetadataOrigin::kCaptureRequest && is_empty_delta_buffer) {
+  // Preserve 0-byte repeating delta requests and 0-byte sessionParams verbatim
+  // (matching stock hicam.hal.bz.so m_sessionSceneMode = -1 until frame 1).
+  if (is_empty_delta_buffer) {
     return false;
   }
 

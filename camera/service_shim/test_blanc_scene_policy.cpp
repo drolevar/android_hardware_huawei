@@ -291,6 +291,25 @@ void test_vendor_tag_wire_types_and_video_front_bypass() {
   assert(front_tags.count(kTagOpticalZoomMode) == 0);
 }
 
+void test_high_speed_opmode_and_empty_session_params_preserved() {
+  std::vector<StreamDesc> streams = {
+      {kPixelFormatImplementationDefined, 0, 1920, 1080},
+  };
+  SessionPolicy hs_session = ClassifySession(
+      0, streams, 3968.0f, blanc::camera::kStreamConfigModeConstrainedHighSpeed);
+  assert(hs_session.is_video);
+
+  SessionPolicy normal_session = ClassifySession(0, streams, 3968.0f, 0U);
+  assert(!normal_session.is_video);
+  TagMap empty_sess_params;
+  bool mutated = RewriteMetadata(
+      &normal_session, MetadataOrigin::kSessionParameters,
+      /*is_empty_delta_buffer=*/true, kRequestTemplatePreview, {},
+      std::nullopt, {}, true, &empty_sess_params);
+  assert(!mutated);
+  assert(empty_sess_params.empty());
+}
+
 }  // namespace
 
 int main() {
@@ -301,6 +320,7 @@ int main() {
   test_empty_repeating_delta_settings_preserved();
   test_zero_or_malformed_crop_region_does_not_nan_or_zoom();
   test_vendor_tag_wire_types_and_video_front_bypass();
-  std::printf("ALL 7 POLICY TESTS PASSED\n");
+  test_high_speed_opmode_and_empty_session_params_preserved();
+  std::printf("ALL 8 POLICY TESTS PASSED\n");
   return 0;
 }
