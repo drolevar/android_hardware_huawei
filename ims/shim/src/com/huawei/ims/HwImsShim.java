@@ -165,6 +165,9 @@ public final class HwImsShim {
             if (HwImsManager.isEnhanced4gLteModeSettingEnabledByUser(context, slotId)) {
                 enableModemImsSwitch(slotId);
             } else {
+                synchronized (DUAL_SIM_LOCK) {
+                    sLastDisabledImsSynced[slotId] = true;
+                }
                 disableModemImsSwitch(slotId);
             }
         }
@@ -431,11 +434,18 @@ public final class HwImsShim {
                     if (s.uiccAppsEnabled && env.isValidSubId(s.subId)) {
                         enabledSubs.add(s);
                         slotEnabled[s.slotId] = true;
-                        sLastDisabledImsSynced[s.slotId] = false;
-                    } else if (!s.uiccAppsEnabled && !sLastDisabledImsSynced[s.slotId]) {
-                        sLastDisabledImsSynced[s.slotId] = true;
-                        env.disableImsSwitch(s.slotId);
                     }
+                }
+            }
+            for (int slot = 0; slot < 2; slot++) {
+                if (slotEnabled[slot]) {
+                    if (sLastDisabledImsSynced[slot]) {
+                        sLastDisabledImsSynced[slot] = false;
+                        env.resyncImsSwitch(slot);
+                    }
+                } else if (!sLastDisabledImsSynced[slot]) {
+                    sLastDisabledImsSynced[slot] = true;
+                    env.disableImsSwitch(slot);
                 }
             }
 

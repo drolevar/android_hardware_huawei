@@ -7,6 +7,7 @@ package com.android.ims;
 
 import android.content.Context;
 import android.os.SystemProperties;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.ims.ImsMmTelManager;
 
@@ -17,6 +18,29 @@ public class HwImsManager {
         }
         int slot = SubscriptionManager.getSlotIndex(slotOrSubId);
         return (slot == 0 || slot == 1) ? slot : 0;
+    }
+
+    public static boolean isSlotActiveAndUiccEnabled(Context context, int slotOrSubId) {
+        if (context == null) {
+            return false;
+        }
+        try {
+            SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+            if (sm == null) {
+                return false;
+            }
+            if (slotOrSubId > 1 && SubscriptionManager.isValidSubscriptionId(slotOrSubId)) {
+                SubscriptionInfo subInfo = sm.getActiveSubscriptionInfo(slotOrSubId);
+                return subInfo != null && subInfo.areUiccApplicationsEnabled();
+            }
+            int slotId = resolveSlotId(slotOrSubId);
+            SubscriptionInfo slotInfo = sm.getActiveSubscriptionInfoForSimSlotIndex(slotId);
+            return slotInfo != null
+                    && slotInfo.areUiccApplicationsEnabled()
+                    && SubscriptionManager.isValidSubscriptionId(slotInfo.getSubscriptionId());
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static ImsManager getAospImsManager(Context context, int slotOrSubId) {
@@ -51,6 +75,9 @@ public class HwImsManager {
     }
 
     public static boolean isEnhanced4gLteModeSettingEnabledByUser(Context context, int slotId) {
+        if (!isSlotActiveAndUiccEnabled(context, slotId)) {
+            return false;
+        }
         try {
             ImsMmTelManager mgr = getMmTelManager(context, slotId);
             if (mgr != null) {

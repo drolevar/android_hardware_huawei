@@ -13,12 +13,15 @@ import android.net.NetworkSpecifier;
 import android.net.TelephonyNetworkSpecifier;
 import android.net.wifi.WifiInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Messenger;
 import android.telephony.PhoneStateListener;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import com.huawei.ims.HwImsShim;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 public final class MapconShim {
@@ -116,16 +119,74 @@ public final class MapconShim {
         return defaultValue;
     }
 
-    public static void syncInitialSimStates(Context context, Object telephonyTracker) {
+    public static void prepareSlotForInitialLoadedReplay(
+            int[] be, boolean[] ie, int slot, String simOperatorNumeric) {
+        if (be != null && slot >= 0 && slot < be.length && be[slot] == 5) {
+            be[slot] = 0;
+            if (ie != null
+                    && slot < ie.length
+                    && simOperatorNumeric != null
+                    && !simOperatorNumeric.isEmpty()) {
+                ie[slot] = true;
+            }
+        }
+    }
+
+    public static void syncInitialSimStates(
+            final Context context, final Object telephonyTracker) {
         if (context == null || telephonyTracker == null) {
             return;
         }
+        final Handler mainHandler = new Handler(Looper.getMainLooper());
+        mainHandler.post(
+                () -> {
+                    try {
+                        Class<?> smMgrCls =
+                                Class.forName(
+                                        "com.hisi.mapcon.l",
+                                        false,
+                                        telephonyTracker.getClass().getClassLoader());
+                        Object smMgr = smMgrCls.getDeclaredMethod("getInstance").invoke(null);
+                        if (!(smMgr instanceof Handler)) {
+                            return;
+                        }
+                        ((Handler) smMgr)
+                                .post(
+                                        () ->
+                                                mainHandler.post(
+                                                        () ->
+                                                                replayInitialSimStatesOnMain(
+                                                                        context,
+                                                                        telephonyTracker,
+                                                                        smMgrCls)));
+                    } catch (Throwable t) {
+                        Log.w("MapconShim", "syncInitialSimStates schedule failed", t);
+                    }
+                });
+    }
+
+    private static void replayInitialSimStatesOnMain(
+            Context context, Object telephonyTracker, Class<?> smMgrCls) {
         try {
+            if (telephonyTracker.getClass().getDeclaredMethod("getInstance").invoke(null)
+                    != telephonyTracker) {
+                return;
+            }
+            if (smMgrCls.getDeclaredMethod("getInstance").invoke(null) == null) {
+                return;
+            }
             TelephonyManager tm = context.getSystemService(TelephonyManager.class);
             if (tm == null) {
                 return;
             }
-            Method handleSim = telephonyTracker.getClass().getDeclaredMethod("e", Intent.class);
+            Field beField = telephonyTracker.getClass().getDeclaredField("be");
+            beField.setAccessible(true);
+            int[] be = (int[]) beField.get(telephonyTracker);
+            Field ieField = telephonyTracker.getClass().getDeclaredField("ie");
+            ieField.setAccessible(true);
+            boolean[] ie = (boolean[]) ieField.get(telephonyTracker);
+            Method handleSim =
+                    telephonyTracker.getClass().getDeclaredMethod("e", Intent.class);
             handleSim.setAccessible(true);
             for (int slot = 0; slot < 2; slot++) {
                 int simState = tm.getSimState(slot);
@@ -134,6 +195,9 @@ public final class MapconShim {
                 if ((simState == TelephonyManager.SIM_STATE_READY
                                 || simState == TelephonyManager.SIM_STATE_LOADED)
                         && SubscriptionManager.isValidSubscriptionId(subId)) {
+                    TelephonyManager subTm = tm.createForSubscriptionId(subId);
+                    String simOperatorNumeric = subTm != null ? subTm.getSimOperator() : null;
+                    prepareSlotForInitialLoadedReplay(be, ie, slot, simOperatorNumeric);
                     ss = "LOADED";
                 } else if (simState == TelephonyManager.SIM_STATE_ABSENT) {
                     ss = "ABSENT";
@@ -149,7 +213,7 @@ public final class MapconShim {
                 }
             }
         } catch (Throwable t) {
-            Log.w("MapconShim", "syncInitialSimStates failed", t);
+            Log.w("MapconShim", "replayInitialSimStatesOnMain failed", t);
         }
     }
 

@@ -35,6 +35,7 @@ import android.telephony.CarrierConfigManager;
 import android.telephony.RadioAccessFamily;
 import android.telephony.TelephonyManager;
 import android.telephony.ims.stub.ImsRegistrationImplBase;
+import com.android.ims.HwImsManager;
 import com.android.internal.telephony.HwModemCapability;
 import com.huawei.android.net.wifi.WifiManagerEx;
 import com.huawei.ims.shim.MapconShim;
@@ -255,6 +256,29 @@ public final class Attempt13ShimTestHarness {
         assertEquals(Arrays.asList(3), env3.assignedDds, "Must auto-reassign DDS from disabled Slot 0 (subId=2) to enabled Slot 1 (subId=3)");
         HwImsShim.reconcileDualSimState(env3, 16_000L);
         assertEquals(Arrays.asList(0), env3.disabledImsSlots, "Disabled IMS switch sync must be debounced/idempotent");
+
+        // Disabled SIM omitted by SubscriptionManager.getActiveSubscriptionInfoList()
+        HwImsShim.resetDualSimStateForTest();
+        FakeEnv env4 = new FakeEnv();
+        env4.subs = Collections.singletonList(new HwImsShim.SimSubSlot(1, 3, true));
+        env4.ddsSubId = 2;
+        env4.radioOn[0] = false;
+        env4.radioOn[1] = true;
+        HwImsShim.reconcileDualSimState(env4, 20_000L);
+        assertEquals(Arrays.asList(0), env4.disabledImsSlots, "Must disable IMS switch on omitted disabled Slot 0");
+        assertEquals(Arrays.asList(3), env4.assignedDds, "Must reassign DDS from omitted disabled Slot 0 to Slot 1");
+        HwImsShim.reconcileDualSimState(env4, 21_000L);
+        assertEquals(Arrays.asList(0), env4.disabledImsSlots, "Omitted disabled IMS switch sync must be debounced");
+        env4.subs =
+                Arrays.asList(
+                        new HwImsShim.SimSubSlot(0, 2, true),
+                        new HwImsShim.SimSubSlot(1, 3, true));
+        env4.ddsSubId = 3;
+        env4.radioOn[0] = true;
+        env4.modemUuid[0] = "1";
+        env4.modemUuid[1] = "0";
+        HwImsShim.reconcileDualSimState(env4, 22_000L);
+        assertEquals(Arrays.asList(0), env4.resyncedImsSlots, "Must resync IMS switch when previously disabled Slot 0 re-enables");
     }
 
     private static void testWifiSignalStructAndHexHelpers() throws Exception {
@@ -446,6 +470,18 @@ public final class Attempt13ShimTestHarness {
         } finally {
             HwImsShim.sSlotIndexResolver = origSlotResolver;
         }
+
+        assertTrue(
+                !HwImsManager.isSlotActiveAndUiccEnabled(null, 0)
+                        && !HwImsManager.isEnhanced4gLteModeSettingEnabledByUser(null, 0),
+                "Inactive or null context must not default IMS setting enabled to true");
+
+        int[] be = {5, 5};
+        boolean[] ie = {false, false};
+        MapconShim.prepareSlotForInitialLoadedReplay(be, ie, 1, "25503");
+        assertEquals(5, be[0], "Slot 0 state must remain untouched when preparing Slot 1");
+        assertEquals(0, be[1], "Premature Slot 1 SIM state 5 must reset to 0 before replay");
+        assertTrue(!ie[0] && ie[1], "Premature Slot 1 ie flag must set true when PLMN present");
     }
 
     public static void main(String[] args) throws Exception {
