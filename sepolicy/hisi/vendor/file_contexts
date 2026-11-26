@@ -143,6 +143,11 @@
 /vendor/bin/blkcginit                           u:object_r:vendor_blkcginit_exec:s0
 /vendor/bin/water_check                         u:object_r:vendor_hisi_misc_exec:s0
 
+# HiAI NPU daemon
+/vendor/bin/hiaiserver                          u:object_r:hiaiserver_exec:s0
+/data/vendor/hiai(/.*)?                         u:object_r:vendor_hiai_data_file:s0
+/data/vendor/aiplatformconfig(/.*)?             u:object_r:vendor_ai_platform_config_file:s0
+
 # Kirin 970 device nodes, sockets, vendor data & sysfs
 /dev/ion                                        u:object_r:ion_device:s0
 /dev/mali0                                      u:object_r:gpu_device:s0

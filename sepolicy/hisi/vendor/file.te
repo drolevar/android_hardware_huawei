@@ -25,6 +25,8 @@ type vendor_camera_data_file, file_type, data_file_type;
 type vendor_gps_data_file, file_type, data_file_type;
 type vendor_iked_data_file, file_type, data_file_type;
 type vendor_hinetmanager_data_file, file_type, data_file_type;
+type vendor_hiai_data_file, file_type, data_file_type;
+type vendor_ai_platform_config_file, file_type, data_file_type;
 type vendor_iked_cert_file, file_type, vendor_file_type;
 
 # Kirin sysfs & procfs nodes

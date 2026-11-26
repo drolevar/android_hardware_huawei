@@ -80,6 +80,9 @@ final class HuaweiVendorTags {
     static final CaptureRequest.Key<Byte> KEY_FRONT_VIRTUAL_EFFECT_LEVEL =
             new CaptureRequest.Key<>("com.huawei.capture.metadata.frontVirtualEffectLevel",
                     Byte.class);
+    static final CaptureRequest.Key<Byte> KEY_MASTER_AI_ENABLE =
+            new CaptureRequest.Key<>("com.huawei.capture.metadata.masterAIEnable",
+                    Byte.class);
 
     static boolean isSupportedCameraId(String cameraId) {
         return "0".equals(cameraId) || "1".equals(cameraId);
@@ -106,6 +109,7 @@ final class HuaweiVendorTags {
                 params.add(param(KEY_EXT_SCENE_MODE, Byte.valueOf((byte) 33)));
                 if (rear) {
                     params.add(param(KEY_DUAL_SENSOR_MODE, Byte.valueOf((byte) 3)));
+                    params.add(param(KEY_MASTER_AI_ENABLE, Byte.valueOf((byte) 1)));
                 }
                 break;
 

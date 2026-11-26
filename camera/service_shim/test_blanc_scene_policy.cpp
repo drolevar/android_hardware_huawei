@@ -8,8 +8,10 @@
 
 namespace {
 
+using blanc::camera::ApplySmartSuggestHint;
 using blanc::camera::ClassifySession;
 using blanc::camera::ComputeEffectiveZoom;
+using blanc::camera::IsNiceFoodEnterMode;
 using blanc::camera::kBufferUsageVideoEncoder;
 using blanc::camera::kPixelFormatBlob;
 using blanc::camera::kPixelFormatImplementationDefined;
@@ -28,10 +30,15 @@ using blanc::camera::kTagExtSceneMode;
 using blanc::camera::kTagFaceBeautyMode;
 using blanc::camera::kTagHwZoomIn;
 using blanc::camera::kTagImagePostProcessMode;
+using blanc::camera::kTagMasterAiEnable;
+using blanc::camera::kTagNiceFoodMode;
 using blanc::camera::kTagOpticalZoomMode;
 using blanc::camera::kTagPortraitMode;
 using blanc::camera::kTagPostProcessForegroundReturnMode;
 using blanc::camera::kTagSensorHdrMode;
+using blanc::camera::kTagSmartSuggestEnterMode;
+using blanc::camera::kTagSmartSuggestHint;
+using blanc::camera::MapSmartSuggestHintToEnterMode;
 using blanc::camera::MetadataOrigin;
 using blanc::camera::RewriteMetadata;
 using blanc::camera::SessionPolicy;
@@ -442,6 +449,148 @@ void test_high_speed_opmode_and_empty_session_params_preserved() {
   assert(empty_sess_params.empty());
 }
 
+void test_master_ai_closed_loop_auto_only() {
+  std::vector<StreamDesc> rear_streams = {
+      {kPixelFormatImplementationDefined, 0, 1440, 1080},
+      {kPixelFormatBlob, 0, 3968, 2976},
+  };
+  SessionPolicy session = ClassifySession(0, rear_streams, 3968.0f);
+  assert(!session.master_ai_enabled);
+  assert(session.master_ai_active_mode == 0);
+  assert(!session.master_ai_state_dirty);
+
+  // ExtensionMode.AUTO on Rear Camera 0 opts in with masterAIEnable=1.
+  TagMap req1;
+  req1[kTagMasterAiEnable] = TagValue::Byte(1);
+  assert(RewriteMetadata(&session, MetadataOrigin::kCaptureRequest, false,
+                         kRequestTemplatePreview, {15, 30}, 1.0f, {}, true,
+                         &req1));
+  assert(session.master_ai_enabled);
+  assert(req1.at(kTagSmartSuggestEnterMode).type == TagType::kInt32);
+  assert(req1.at(kTagSmartSuggestEnterMode).int32_val == 0);
+  assert(req1.at(kTagNiceFoodMode).type == TagType::kByte);
+  assert(req1.at(kTagNiceFoodMode).byte_val == 0);
+  assert(!session.master_ai_state_dirty);
+
+  // Food hints (7, 115, and 0x40007 with assist flag) set enter_mode & niceFoodMode=1.
+  for (int32_t hint : {7, 115, 0x40007}) {
+    const int32_t expected_mode = (hint == 115) ? 115 : 7;
+    if (session.master_ai_active_mode == expected_mode) {
+      assert(!ApplySmartSuggestHint(&session, hint));
+      continue;
+    }
+    assert(ApplySmartSuggestHint(&session, hint));
+    assert(session.master_ai_active_mode == expected_mode);
+    assert(session.master_ai_state_dirty);
+    TagMap req;
+    req[kTagMasterAiEnable] = TagValue::Byte(1);
+    assert(RewriteMetadata(&session, MetadataOrigin::kCaptureRequest, false,
+                           kRequestTemplatePreview, {15, 30}, 1.0f, {}, true,
+                           &req));
+    assert(req.at(kTagSmartSuggestEnterMode).int32_val == expected_mode);
+    assert(req.at(kTagNiceFoodMode).byte_val == 1);
+    assert(!session.master_ai_state_dirty);
+  }
+
+  // Vivid / BlueSky / Greenery / Sunset / Flower hints keep niceFoodMode=0.
+  for (int32_t vivid_mode : {12, 13, 15, 9}) {
+    assert(ApplySmartSuggestHint(&session, vivid_mode | 0x40000));
+    assert(session.master_ai_state_dirty);
+    TagMap req;
+    req[kTagMasterAiEnable] = TagValue::Byte(1);
+    assert(RewriteMetadata(&session, MetadataOrigin::kCaptureRequest, false,
+                           kRequestTemplatePreview, {15, 30}, 1.0f, {}, true,
+                           &req));
+    assert(req.at(kTagSmartSuggestEnterMode).int32_val == vivid_mode);
+    assert(req.at(kTagNiceFoodMode).byte_val == 0);
+    assert(!session.master_ai_state_dirty);
+  }
+
+  // Non-whitelisted hints (2, 17, 18) and explicit exit (0) return to mode 0.
+  for (int32_t exit_hint : {2, 17, 18, 0}) {
+    assert(MapSmartSuggestHintToEnterMode(exit_hint) == 0);
+  }
+  assert(ApplySmartSuggestHint(&session, 17));
+  assert(session.master_ai_active_mode == 0);
+  assert(session.master_ai_state_dirty);
+  TagMap req_exit;
+  req_exit[kTagMasterAiEnable] = TagValue::Byte(1);
+  assert(RewriteMetadata(&session, MetadataOrigin::kCaptureRequest, false,
+                         kRequestTemplatePreview, {15, 30}, 1.0f, {}, true,
+                         &req_exit));
+  assert(req_exit.at(kTagSmartSuggestEnterMode).int32_val == 0);
+  assert(req_exit.at(kTagNiceFoodMode).byte_val == 0);
+  assert(!session.master_ai_state_dirty);
+
+  // Re-classifying resets Master AI state.
+  assert(ApplySmartSuggestHint(&session, 7));
+  session = ClassifySession(0, rear_streams, 3968.0f);
+  assert(!session.master_ai_enabled);
+  assert(session.master_ai_active_mode == 0);
+  assert(!session.master_ai_state_dirty);
+
+  // Photo (NONE) without masterAIEnable stays off and ignores hints.
+  TagMap photo_req;
+  assert(RewriteMetadata(&session, MetadataOrigin::kCaptureRequest, false,
+                         kRequestTemplatePreview, {15, 30}, 1.0f, {}, true,
+                         &photo_req));
+  assert(!session.master_ai_enabled);
+  assert(photo_req.count(kTagSmartSuggestEnterMode) == 0);
+  assert(photo_req.count(kTagNiceFoodMode) == 0);
+  assert(!ApplySmartSuggestHint(&session, 7));
+
+  // Explicit HDR (5), BOKEH (19), NIGHT (36), FACE_RETOUCH (16) stay unaffected.
+  for (int32_t explicit_scene : {5, 19, 36, 16}) {
+    SessionPolicy exp_sess = ClassifySession(0, rear_streams, 3968.0f);
+    assert(ApplySmartSuggestHint(&exp_sess, 7) == false);
+    TagMap exp_req;
+    exp_req[kTagCameraSceneMode] = TagValue::Int32(explicit_scene);
+    exp_req[kTagMasterAiEnable] = TagValue::Byte(1);
+    RewriteMetadata(&exp_sess, MetadataOrigin::kCaptureRequest, false,
+                    kRequestTemplatePreview, {15, 30}, 1.0f, {}, true, &exp_req);
+    assert(!exp_sess.master_ai_enabled);
+    assert(exp_req.count(kTagSmartSuggestEnterMode) == 0);
+    assert(!ApplySmartSuggestHint(&exp_sess, 7));
+  }
+
+  // Front Camera 1, Video, and RAW16 reject Master AI opt-in and ignore hints.
+  SessionPolicy front_sess = ClassifySession(
+      1, {{kPixelFormatImplementationDefined, 0, 1440, 1080},
+          {kPixelFormatBlob, 0, 3264, 2448}},
+      3264.0f);
+  TagMap front_req;
+  front_req[kTagMasterAiEnable] = TagValue::Byte(1);
+  RewriteMetadata(&front_sess, MetadataOrigin::kCaptureRequest, false,
+                  kRequestTemplatePreview, {15, 30}, 1.0f, {}, true, &front_req);
+  assert(!front_sess.master_ai_enabled);
+  assert(front_req.count(kTagSmartSuggestEnterMode) == 0);
+  assert(!ApplySmartSuggestHint(&front_sess, 7));
+
+  SessionPolicy video_sess = ClassifySession(
+      0,
+      {{kPixelFormatImplementationDefined, kBufferUsageVideoEncoder, 1920, 1080},
+       {kPixelFormatBlob, 0, 3968, 2976}},
+      3968.0f);
+  TagMap vid_req;
+  vid_req[kTagMasterAiEnable] = TagValue::Byte(1);
+  assert(!RewriteMetadata(&video_sess, MetadataOrigin::kCaptureRequest, false,
+                          kRequestTemplateVideoRecord, {30, 30}, 1.0f, {}, true,
+                          &vid_req));
+  assert(!video_sess.master_ai_enabled);
+  assert(!ApplySmartSuggestHint(&video_sess, 7));
+
+  SessionPolicy raw_sess = ClassifySession(
+      0, {{kPixelFormatRaw16, 0, 3968, 2976}, {kPixelFormatBlob, 0, 3968, 2976}},
+      3968.0f);
+  TagMap raw_req;
+  raw_req[kTagMasterAiEnable] = TagValue::Byte(1);
+  assert(!RewriteMetadata(&raw_sess, MetadataOrigin::kCaptureRequest, false,
+                          kRequestTemplateStillCapture, {15, 30}, 1.0f, {},
+                          true, &raw_req));
+  assert(!raw_sess.master_ai_enabled);
+  assert(!ApplySmartSuggestHint(&raw_sess, 7));
+}
+
 }  // namespace
 
 int main() {
@@ -453,6 +602,7 @@ int main() {
   test_zero_or_malformed_crop_region_does_not_nan_or_zoom();
   test_vendor_tag_wire_types_and_video_front_bypass();
   test_high_speed_opmode_and_empty_session_params_preserved();
-  std::printf("ALL 8 POLICY TESTS PASSED\n");
+  test_master_ai_closed_loop_auto_only();
+  std::printf("ALL 9 POLICY TESTS PASSED\n");
   return 0;
 }

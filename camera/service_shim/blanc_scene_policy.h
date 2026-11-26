@@ -67,6 +67,7 @@ constexpr uint32_t kTagDualSensorMode = 0x8000004bU;
 constexpr uint32_t kTagHwZoomIn = 0x80000070U;
 constexpr uint32_t kTagNormalFrontNightMode = 0x8000007aU;
 constexpr uint32_t kTagExtSceneMode = 0x8000007bU;
+constexpr uint32_t kTagNiceFoodMode = 0x8000008bU;
 constexpr uint32_t kTagSensorHdrMode = 0x80000090U;
 constexpr uint32_t kTagApertureMode = 0x800000c4U;
 constexpr uint32_t kTagApertureValue = 0x800000c6U;
@@ -74,6 +75,9 @@ constexpr uint32_t kTagOpticalZoomMode = 0x800000caU;
 constexpr uint32_t kTagPortraitMode = 0x80000264U;
 constexpr uint32_t kTagFrontVirtualEffectMode = 0x80000265U;
 constexpr uint32_t kTagFrontVirtualEffectLevel = 0x80000266U;
+constexpr uint32_t kTagSmartSuggestHint = 0x8000028fU;
+constexpr uint32_t kTagSmartSuggestEnterMode = 0x80000293U;
+constexpr uint32_t kTagMasterAiEnable = 0x80000294U;
 constexpr uint32_t kTagCameraSceneMode = 0x800002a2U;
 constexpr uint32_t kTagCameraSessionSceneMode = 0x800002a3U;
 constexpr uint32_t kTagPostProcessForegroundReturnMode = 0x800002e8U;
@@ -87,6 +91,10 @@ struct VendorTagIds {
   uint32_t image_post_process_mode = kTagImagePostProcessMode;
   uint32_t ext_scene_mode = kTagExtSceneMode;
   uint32_t post_process_fg_return_mode = kTagPostProcessForegroundReturnMode;
+  uint32_t nice_food_mode = kTagNiceFoodMode;
+  uint32_t smart_suggest_hint = kTagSmartSuggestHint;
+  uint32_t smart_suggest_enter_mode = kTagSmartSuggestEnterMode;
+  uint32_t master_ai_enable = kTagMasterAiEnable;
 };
 
 struct StreamDesc {
@@ -104,6 +112,9 @@ struct SessionPolicy {
   bool is_video = false;
   float active_array_width = 3968.0f;
   float last_zoom_ratio = 1.0f;
+  bool master_ai_enabled = false;
+  int32_t master_ai_active_mode = 0;
+  bool master_ai_state_dirty = false;
 
   bool can_postproc() const {
     return has_blob && !has_raw16 && !has_high_res_yuv && !is_video;
@@ -123,6 +134,12 @@ SessionPolicy ClassifySession(int camera_id,
 float ComputeEffectiveZoom(std::optional<float> control_zoom_ratio,
                            const std::vector<int32_t>& scaler_crop_region,
                            float active_array_width);
+
+int32_t MapSmartSuggestHintToEnterMode(int32_t raw_hint);
+
+bool IsNiceFoodEnterMode(int32_t enter_mode);
+
+bool ApplySmartSuggestHint(SessionPolicy* session, int32_t raw_hint);
 
 bool RewriteMetadata(SessionPolicy* session,
                      MetadataOrigin origin,

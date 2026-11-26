@@ -751,6 +751,61 @@ class Phase6BSepolicyTests(unittest.TestCase):
             genfs_txt,
         )
 
+    def test_stage_b_hiaiserver_npu_sepolicy(self):
+        rules = load_file_contexts()
+        self.assertEqual(resolve_type(rules, "/vendor/bin/hiaiserver"), "hiaiserver_exec")
+        self.assertEqual(resolve_type(rules, "/data/vendor/hiai/stats/log"), "vendor_hiai_data_file")
+        self.assertEqual(resolve_type(rules, "/data/vendor/aiplatformconfig/cfg"), "vendor_ai_platform_config_file")
+        self.assertEqual(resolve_type(rules, "/dev/ipu"), "vendor_ipu_device")
+        # Ensure HiAI server/NPU libs do NOT unnecessarily widen same_process_hal_file.
+        for lib_path in (
+            "/vendor/lib64/libhiai_server.so",
+            "/vendor/lib64/libhiai_ipu.so",
+            "/vendor/lib64/libhiai_hcs.so",
+            "/vendor/lib64/libipu.so",
+        ):
+            self.assertEqual([t for pat, t in rules if re.fullmatch(pat, lib_path)], [])
+
+        hw_ctx = (POLICY / "private/hwservice_contexts").read_text()
+        for iface in (
+            "vendor.huawei.hardware.ai::IAiEngineService",
+            "vendor.huawei.hardware.ai::IAIService_hidl",
+            "vendor.huawei.hardware.ai::IModelManagerService_hidl",
+            "vendor.huawei.hardware.ai.dedicatedmm::IDedicatedMM",
+            "vendor.huawei.hardware.ai.hidlrequest::IHidlRequest",
+            "vendor.huawei.hardware.ai.om::IOmHidlBridge",
+            "vendor.huawei.hardware.ai.stats::IAiStatsService",
+        ):
+            self.assertRegex(
+                hw_ctx,
+                re.compile(rf"(?m)^{re.escape(iface)}\s+u:object_r:hal_neuralnetworks_hwservice:s0$"),
+            )
+
+        prop_te = (VENDOR / "property.te").read_text()
+        self.assertIn("vendor_internal_prop(vendor_hiai_prop)", prop_te)
+        prop_ctx = (VENDOR / "property_contexts").read_text()
+        self.assertRegex(prop_ctx, r"(?m)^persist\.vendor\.ai\.\s+u:object_r:vendor_hiai_prop:s0$")
+        self.assertRegex(prop_ctx, r"(?m)^vendor\.ArmNN\.\s+u:object_r:vendor_hiai_prop:s0$")
+
+        hiai_te = re.sub(r"#.*", "", (VENDOR / "hiaiserver.te").read_text())
+        for needle in (
+            "init_daemon_domain(hiaiserver)",
+            "hal_server_domain(hiaiserver, hal_neuralnetworks)",
+            "hal_client_domain(hiaiserver, hal_allocator)",
+            "hal_client_domain(hiaiserver, vendor_hal_hisi_perf)",
+            "wakelock_use(hiaiserver)",
+            "vendor_ipu_device",
+            "vendor_hiai_data_file",
+            "vendor_ai_platform_config_file",
+            "get_prop(hiaiserver, vendor_hiai_prop)",
+            "set_prop(hiaiserver, vendor_xcollie_prop)",
+        ):
+            self.assertIn(needle, hiai_te)
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        self.assertIn("hal_client_domain(hal_camera_default, hal_neuralnetworks)", clients_te)
+        self.assertIn("allow hal_camera_default hiaiserver:fd use;", clients_te)
+
 
 if __name__ == "__main__":
     unittest.main()

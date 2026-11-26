@@ -173,6 +173,8 @@ allow { hal_power_default vendor_hal_hisi_perf_default } {
 
 # Camera HAL (CameraDaemon)
 vndbinder_use(hal_camera_default)
+hal_client_domain(hal_camera_default, hal_neuralnetworks)
+allow hal_camera_default hiaiserver:fd use;
 allow hal_camera_default self:process execmem;
 allow hal_camera_default self:global_capability_class_set sys_nice;
 allow hal_camera_default graphics_device:dir search;

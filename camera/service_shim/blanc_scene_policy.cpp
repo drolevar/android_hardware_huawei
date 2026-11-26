@@ -34,6 +34,12 @@ bool HasHighFps(const std::vector<int32_t>& ae_target_fps_range) {
   return false;
 }
 
+void ClearMasterAiState(SessionPolicy* session) {
+  session->master_ai_enabled = false;
+  session->master_ai_active_mode = 0;
+  session->master_ai_state_dirty = false;
+}
+
 }  // namespace
 
 SessionPolicy ClassifySession(int camera_id,
@@ -47,6 +53,7 @@ SessionPolicy ClassifySession(int camera_id,
           ? active_array_width
           : 3968.0f;
   policy.last_zoom_ratio = 1.0f;
+  ClearMasterAiState(&policy);
   if (operation_mode == kStreamConfigModeConstrainedHighSpeed) {
     policy.is_video = true;
   }
@@ -67,6 +74,49 @@ SessionPolicy ClassifySession(int camera_id,
     }
   }
   return policy;
+}
+
+int32_t MapSmartSuggestHintToEnterMode(int32_t raw_hint) {
+  // Strip assist/status high bits (e.g., 0x40000) to match
+  // ModeRecommendation::notifyResult behavior on EMUI 12 .225.
+  const uint8_t mode = static_cast<uint8_t>(raw_hint & 0xFF);
+  switch (mode) {
+    case 1:    // Portrait face tone
+    case 4:    // Beach
+    case 5:    // Snow
+    case 6:    // Stage
+    case 7:    // Food -> nicefood mSnapshotId=23
+    case 8:    // Fireworks
+    case 9:    // Flower
+    case 10:   // Waterfall
+    case 12:   // BlueSky (0xB000/0xB200 vivid)
+    case 13:   // Greenery
+    case 15:   // Sunset
+    case 19:   // Cat
+    case 20:   // Dog
+    case 115:  // Food variant (0x73 -> nicefood)
+      return static_cast<int32_t>(mode);
+    default:
+      return 0;
+  }
+}
+
+bool IsNiceFoodEnterMode(int32_t enter_mode) {
+  return enter_mode == 7 || enter_mode == 115;
+}
+
+bool ApplySmartSuggestHint(SessionPolicy* session, int32_t raw_hint) {
+  if (session == nullptr || !session->master_ai_enabled ||
+      !session->can_postproc() || session->camera_id != 0) {
+    return false;
+  }
+  const int32_t next = MapSmartSuggestHintToEnterMode(raw_hint);
+  if (next == session->master_ai_active_mode) {
+    return false;
+  }
+  session->master_ai_active_mode = next;
+  session->master_ai_state_dirty = true;
+  return true;
 }
 
 float ComputeEffectiveZoom(std::optional<float> control_zoom_ratio,
@@ -218,6 +268,32 @@ bool RewriteMetadata(SessionPolicy* session,
                                 TagValue::Byte(33));
       }
     }
+  }
+
+  // Closed-loop Master AI applies ONLY on Rear Camera 0 AUTO/NORMAL BLOB
+  // sessions that explicitly opt in via com.huawei.capture.metadata.masterAIEnable=1.
+  if (session->camera_id == 0 && can_pp && effective_scene == 0) {
+    auto mai_it = tags->find(tag_ids.master_ai_enable);
+    if (mai_it != tags->end() && mai_it->second.type == TagType::kByte) {
+      if (mai_it->second.byte_val == 1) {
+        session->master_ai_enabled = true;
+      } else if (mai_it->second.byte_val == 0) {
+        ClearMasterAiState(session);
+      }
+    }
+  } else {
+    ClearMasterAiState(session);
+  }
+
+  if (session->master_ai_enabled && origin == MetadataOrigin::kCaptureRequest) {
+    mutated |= SetIfChanged(tags, tag_ids.smart_suggest_enter_mode,
+                            TagValue::Int32(session->master_ai_active_mode));
+    mutated |= SetIfChanged(
+        tags, tag_ids.nice_food_mode,
+        TagValue::Byte(IsNiceFoodEnterMode(session->master_ai_active_mode)
+                           ? 1U
+                           : 0U));
+    session->master_ai_state_dirty = false;
   }
 
   return mutated;

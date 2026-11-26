@@ -1,4 +1,11 @@
 vendor.huawei.hardware.activity_recognition::IActivityRecognition           u:object_r:vendor_hal_hisi_activity_recognition_hwservice:s0
+vendor.huawei.hardware.ai.dedicatedmm::IDedicatedMM                           u:object_r:hal_neuralnetworks_hwservice:s0
+vendor.huawei.hardware.ai.hidlrequest::IHidlRequest                           u:object_r:hal_neuralnetworks_hwservice:s0
+vendor.huawei.hardware.ai.om::IOmHidlBridge                                   u:object_r:hal_neuralnetworks_hwservice:s0
+vendor.huawei.hardware.ai.stats::IAiStatsService                              u:object_r:hal_neuralnetworks_hwservice:s0
+vendor.huawei.hardware.ai::IAiEngineService                                   u:object_r:hal_neuralnetworks_hwservice:s0
+vendor.huawei.hardware.ai::IAIService_hidl                                    u:object_r:hal_neuralnetworks_hwservice:s0
+vendor.huawei.hardware.ai::IModelManagerService_hidl                          u:object_r:hal_neuralnetworks_hwservice:s0
 vendor.huawei.hardware.biometrics.fingerprint::IExtBiometricsFingerprint    u:object_r:hal_fingerprint_hwservice:s0
 vendor.huawei.hardware.camera.camResource::IHwCameraResourceService         u:object_r:hal_camera_hwservice:s0
 vendor.huawei.hardware.camera.cfgsvr::IHwCamCfgSvr                          u:object_r:hal_camera_hwservice:s0

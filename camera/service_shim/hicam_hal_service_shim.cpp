@@ -13,6 +13,7 @@
 #include <android/hardware/camera/device/3.2/ICameraDeviceCallback.h>
 #include <android/hardware/camera/device/3.2/ICameraDeviceSession.h>
 #include <android/hardware/camera/device/3.3/ICameraDeviceSession.h>
+#include <android/hardware/camera/device/3.4/ICameraDeviceCallback.h>
 #include <android/hardware/camera/device/3.4/ICameraDeviceSession.h>
 #include <android/hardware/camera/provider/2.4/ICameraProvider.h>
 #include <android/hardware/camera/provider/2.4/ICameraProviderCallback.h>
@@ -51,7 +52,9 @@ using ::android::hardware::camera::common::V1_0::CameraResourceCost;
 using ::android::hardware::camera::common::V1_0::Status;
 using ::android::hardware::camera::common::V1_0::TorchMode;
 using ::android::hardware::camera::common::V1_0::VendorTagSection;
+using ::blanc::camera::ApplySmartSuggestHint;
 using ::blanc::camera::ClassifySession;
+using ::blanc::camera::IsNiceFoodEnterMode;
 using ::blanc::camera::MetadataOrigin;
 using ::blanc::camera::RewriteMetadata;
 using ::blanc::camera::SessionPolicy;
@@ -68,7 +71,9 @@ namespace V3_4 = ::android::hardware::camera::device::V3_4;
 namespace V2_4 = ::android::hardware::camera::provider::V2_4;
 
 using RequestMetadataQueue = MessageQueue<uint8_t, kSynchronizedReadWrite>;
+using ResultMetadataQueue = MessageQueue<uint8_t, kSynchronizedReadWrite>;
 constexpr size_t kDefaultRequestFmqBytes = 1ULL << 20;  // 1 MiB
+constexpr size_t kDefaultResultFmqBytes = 1ULL << 20;   // 1 MiB
 
 // Fallback vendor_tag_ops registry in case libcamera_metadata in this linker
 // namespace has not yet had vendor_tag_ops installed when we add vendor entries.
@@ -164,6 +169,14 @@ void PopulateVendorTagsFromSections(const hidl_vec<VendorTagSection>& sections,
             resolved.ext_scene_mode = tag.tagId;
           } else if (tag_name == "postProcessForegroundReturnMode") {
             resolved.post_process_fg_return_mode = tag.tagId;
+          } else if (tag_name == "niceFoodMode") {
+            resolved.nice_food_mode = tag.tagId;
+          } else if (tag_name == "smartSuggestHint") {
+            resolved.smart_suggest_hint = tag.tagId;
+          } else if (tag_name == "smartsuggest_entermode") {
+            resolved.smart_suggest_enter_mode = tag.tagId;
+          } else if (tag_name == "masterAIEnable") {
+            resolved.master_ai_enable = tag.tagId;
           }
         }
       }
@@ -256,7 +269,11 @@ bool RewriteMetadataBytes(SessionPolicy* session,
                           const uint8_t* src_bytes,
                           size_t src_len,
                           const VendorTagIds& tag_ids,
-                          std::vector<uint8_t>* out_rewritten) {
+                          std::vector<uint8_t>* out_rewritten,
+                          bool* out_safe_preview_template = nullptr) {
+  if (out_safe_preview_template != nullptr) {
+    *out_safe_preview_template = false;
+  }
   if (session == nullptr || out_rewritten == nullptr) {
     return false;
   }
@@ -298,6 +315,26 @@ bool RewriteMetadataBytes(SessionPolicy* session,
     request_template = static_cast<int32_t>(entry.data.u8[0]);
   }
 
+  uint8_t af_trigger = 0;
+  if (find_camera_metadata_ro_entry(meta, ANDROID_CONTROL_AF_TRIGGER, &entry) ==
+          0 &&
+      entry.count > 0) {
+    af_trigger = entry.data.u8[0];
+  }
+
+  uint8_t ae_precapture_trigger = 0;
+  if (find_camera_metadata_ro_entry(
+          meta, ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER, &entry) == 0 &&
+      entry.count > 0) {
+    ae_precapture_trigger = entry.data.u8[0];
+  }
+
+  if (out_safe_preview_template != nullptr) {
+    *out_safe_preview_template =
+        (request_template == blanc::camera::kRequestTemplatePreview &&
+         af_trigger == 0 && ae_precapture_trigger == 0);
+  }
+
   std::vector<int32_t> ae_fps;
   if (find_camera_metadata_ro_entry(meta, ANDROID_CONTROL_AE_TARGET_FPS_RANGE,
                                     &entry) == 0 &&
@@ -328,6 +365,9 @@ bool RewriteMetadataBytes(SessionPolicy* session,
   ReadEntryIntoTagMap(meta, tag_ids.image_post_process_mode, &tags);
   ReadEntryIntoTagMap(meta, tag_ids.ext_scene_mode, &tags);
   ReadEntryIntoTagMap(meta, tag_ids.post_process_fg_return_mode, &tags);
+  ReadEntryIntoTagMap(meta, tag_ids.nice_food_mode, &tags);
+  ReadEntryIntoTagMap(meta, tag_ids.smart_suggest_enter_mode, &tags);
+  ReadEntryIntoTagMap(meta, tag_ids.master_ai_enable, &tags);
 
   const bool mutated = RewriteMetadata(
       session, origin, /*is_empty_delta_buffer=*/false, request_template,
@@ -382,21 +422,271 @@ bool RewriteMetadataBytes(SessionPolicy* session,
   return true;
 }
 
+struct MasterAiBridge {
+  explicit MasterAiBridge(const VendorTagIds& tag_ids) : tag_ids_(tag_ids) {
+    outer_res_fmq_ = std::make_unique<ResultMetadataQueue>(
+        kDefaultResultFmqBytes, /*configureEventFlagWord=*/false);
+    if (!outer_res_fmq_->isValid()) {
+      ALOGE("Failed to allocate outer ResultMetadataQueue");
+      outer_res_fmq_.reset();
+    }
+  }
+
+  VendorTagIds tag_ids_;
+  // Lock hierarchy: acquire fmq_mutex_ strictly BEFORE state_mutex_ if both are
+  // needed, and never hold state_mutex_ across Binder/HIDL IPC.
+  std::mutex state_mutex_;
+  SessionPolicy session_;
+  std::vector<uint8_t> last_preview_req_bytes_;
+
+  std::mutex fmq_mutex_;
+  std::unique_ptr<ResultMetadataQueue> inner_res_fmq_;
+  std::unique_ptr<ResultMetadataQueue> outer_res_fmq_;
+};
+
+bool ReadResultSliceLocked(MasterAiBridge* bridge,
+                           uint64_t fmq_size,
+                           const V3_2::CameraMetadata& inline_meta,
+                           std::vector<std::vector<uint8_t>>* backing_buffers,
+                           const uint8_t** out_ptr,
+                           size_t* out_len) {
+  *out_ptr = nullptr;
+  *out_len = 0;
+  if (fmq_size > 0) {
+    if (bridge->inner_res_fmq_ == nullptr ||
+        !bridge->inner_res_fmq_->isValid()) {
+      ALOGE("Result fmqResultSize=%llu without valid inner ResultMetadataQueue",
+            static_cast<unsigned long long>(fmq_size));
+      return false;
+    }
+    backing_buffers->emplace_back(fmq_size);
+    if (!bridge->inner_res_fmq_->read(backing_buffers->back().data(),
+                                      fmq_size)) {
+      ALOGE("Failed reading %llu bytes from inner ResultMetadataQueue",
+            static_cast<unsigned long long>(fmq_size));
+      backing_buffers->pop_back();
+      return false;
+    }
+    *out_ptr = backing_buffers->back().data();
+    *out_len = backing_buffers->back().size();
+    return true;
+  }
+  *out_ptr = inline_meta.data();
+  *out_len = inline_meta.size();
+  return true;
+}
+
+void WriteResultSliceLocked(MasterAiBridge* bridge,
+                            const uint8_t* ptr,
+                            size_t len,
+                            uint64_t* out_fmq_size,
+                            V3_2::CameraMetadata* out_inline) {
+  if (len == 0 || ptr == nullptr) {
+    *out_fmq_size = 0;
+    out_inline->setToExternal(nullptr, 0);
+    return;
+  }
+  if (bridge->outer_res_fmq_ != nullptr && bridge->outer_res_fmq_->isValid() &&
+      bridge->outer_res_fmq_->write(ptr, len)) {
+    *out_fmq_size = len;
+    out_inline->setToExternal(nullptr, 0);
+    return;
+  }
+  *out_fmq_size = 0;
+  out_inline->setToExternal(const_cast<uint8_t*>(ptr), len);
+}
+
+void InspectResultMetadataForHint(MasterAiBridge* bridge,
+                                  const uint8_t* ptr,
+                                  size_t len) {
+  if (bridge == nullptr || ptr == nullptr || len == 0) {
+    return;
+  }
+  {
+    std::lock_guard<std::mutex> state_lock(bridge->state_mutex_);
+    if (!bridge->session_.master_ai_enabled) {
+      return;
+    }
+  }
+
+  const auto* raw_meta = reinterpret_cast<const camera_metadata_t*>(ptr);
+  const int val_res = validate_camera_metadata_structure(raw_meta, &len);
+  if (val_res == CAMERA_METADATA_VALIDATION_ERROR) {
+    return;
+  }
+
+  camera_metadata_t* aligned_clone = nullptr;
+  const camera_metadata_t* meta = raw_meta;
+  if (val_res == CAMERA_METADATA_VALIDATION_SHIFTED) {
+    aligned_clone = clone_camera_metadata(raw_meta);
+    if (aligned_clone == nullptr) {
+      return;
+    }
+    meta = aligned_clone;
+  }
+
+  camera_metadata_ro_entry_t entry{};
+  if (find_camera_metadata_ro_entry(meta, bridge->tag_ids_.smart_suggest_hint,
+                                    &entry) == 0 &&
+      entry.type == TYPE_INT32 && entry.count > 0) {
+    const int32_t raw_hint = entry.data.i32[0];
+    std::lock_guard<std::mutex> state_lock(bridge->state_mutex_);
+    if (ApplySmartSuggestHint(&bridge->session_, raw_hint)) {
+      ALOGI("MasterAI camera=%d hint=0x%x -> enterMode=%d niceFood=%d",
+            bridge->session_.camera_id, raw_hint,
+            bridge->session_.master_ai_active_mode,
+            IsNiceFoodEnterMode(bridge->session_.master_ai_active_mode) ? 1
+                                                                        : 0);
+    }
+  }
+
+  if (aligned_clone != nullptr) {
+    free_camera_metadata(aligned_clone);
+  }
+}
+
+bool ForwardV3_2ResultLocked(
+    MasterAiBridge* bridge,
+    const V3_2::CaptureResult& src,
+    V3_2::CaptureResult* dst,
+    std::vector<std::vector<uint8_t>>* backing_buffers) {
+  dst->frameNumber = src.frameNumber;
+  dst->partialResult = src.partialResult;
+  CopyStreamBufferShallow(src.inputBuffer, &dst->inputBuffer);
+  dst->outputBuffers.resize(src.outputBuffers.size());
+  for (size_t b = 0; b < src.outputBuffers.size(); ++b) {
+    CopyStreamBufferShallow(src.outputBuffers[b], &dst->outputBuffers[b]);
+  }
+
+  const uint8_t* ptr = nullptr;
+  size_t len = 0;
+  const bool read_ok = ReadResultSliceLocked(
+      bridge, src.fmqResultSize, src.result, backing_buffers, &ptr, &len);
+  if (read_ok) {
+    InspectResultMetadataForHint(bridge, ptr, len);
+  }
+  WriteResultSliceLocked(bridge, ptr, len, &dst->fmqResultSize, &dst->result);
+  return read_ok;
+}
+
+Return<void> HandleProcessCaptureResultV3_2(
+    const sp<V3_2::ICameraDeviceCallback>& upstream,
+    const std::shared_ptr<MasterAiBridge>& bridge,
+    const hidl_vec<V3_2::CaptureResult>& results) {
+  if (upstream == nullptr) {
+    return Void();
+  }
+  std::vector<std::vector<uint8_t>> backing_buffers;
+  backing_buffers.reserve(results.size());
+  hidl_vec<V3_2::CaptureResult> out_results(results.size());
+  std::lock_guard<std::mutex> fmq_lock(bridge->fmq_mutex_);
+  for (size_t i = 0; i < results.size(); ++i) {
+    if (!ForwardV3_2ResultLocked(bridge.get(), results[i], &out_results[i],
+                                 &backing_buffers)) {
+      ALOGE("Failed forwarding V3_2 CaptureResult frame=%u",
+            results[i].frameNumber);
+    }
+  }
+  return upstream->processCaptureResult(out_results);
+}
+
+class BlancCameraDeviceCallbackV3_2 final : public V3_2::ICameraDeviceCallback {
+ public:
+  BlancCameraDeviceCallbackV3_2(sp<V3_2::ICameraDeviceCallback> upstream,
+                                std::shared_ptr<MasterAiBridge> bridge)
+      : upstream_(std::move(upstream)), bridge_(std::move(bridge)) {}
+
+  Return<void> processCaptureResult(
+      const hidl_vec<V3_2::CaptureResult>& results) override {
+    return HandleProcessCaptureResultV3_2(upstream_, bridge_, results);
+  }
+
+  Return<void> notify(const hidl_vec<V3_2::NotifyMsg>& msgs) override {
+    return upstream_->notify(msgs);
+  }
+
+ private:
+  sp<V3_2::ICameraDeviceCallback> upstream_;
+  std::shared_ptr<MasterAiBridge> bridge_;
+};
+
+class BlancCameraDeviceCallbackV3_4 final : public V3_4::ICameraDeviceCallback {
+ public:
+  BlancCameraDeviceCallbackV3_4(sp<V3_4::ICameraDeviceCallback> upstream,
+                                std::shared_ptr<MasterAiBridge> bridge)
+      : upstream_(std::move(upstream)), bridge_(std::move(bridge)) {}
+
+  Return<void> processCaptureResult(
+      const hidl_vec<V3_2::CaptureResult>& results) override {
+    return HandleProcessCaptureResultV3_2(upstream_, bridge_, results);
+  }
+
+  Return<void> notify(const hidl_vec<V3_2::NotifyMsg>& msgs) override {
+    return upstream_->notify(msgs);
+  }
+
+  Return<void> processCaptureResult_3_4(
+      const hidl_vec<V3_4::CaptureResult>& results) override {
+    if (upstream_ == nullptr) {
+      return Void();
+    }
+    std::vector<std::vector<uint8_t>> backing_buffers;
+    backing_buffers.reserve(results.size() * 2);
+    hidl_vec<V3_4::CaptureResult> out_results(results.size());
+    std::lock_guard<std::mutex> fmq_lock(bridge_->fmq_mutex_);
+    for (size_t i = 0; i < results.size(); ++i) {
+      const V3_4::CaptureResult& src = results[i];
+      V3_4::CaptureResult& dst = out_results[i];
+      if (!ForwardV3_2ResultLocked(bridge_.get(), src.v3_2, &dst.v3_2,
+                                   &backing_buffers)) {
+        ALOGE("Failed forwarding V3_4 v3_2 CaptureResult frame=%u",
+              src.v3_2.frameNumber);
+      }
+      dst.physicalCameraMetadata.resize(src.physicalCameraMetadata.size());
+      for (size_t p = 0; p < src.physicalCameraMetadata.size(); ++p) {
+        const auto& src_phys = src.physicalCameraMetadata[p];
+        auto& dst_phys = dst.physicalCameraMetadata[p];
+        dst_phys.physicalCameraId = src_phys.physicalCameraId;
+        const uint8_t* ptr = nullptr;
+        size_t len = 0;
+        if (!ReadResultSliceLocked(bridge_.get(), src_phys.fmqMetadataSize,
+                                   src_phys.metadata, &backing_buffers, &ptr,
+                                   &len)) {
+          ALOGE("Failed reading physical result metadata frame=%u",
+                src.v3_2.frameNumber);
+        }
+        WriteResultSliceLocked(bridge_.get(), ptr, len,
+                               &dst_phys.fmqMetadataSize, &dst_phys.metadata);
+      }
+    }
+    return upstream_->processCaptureResult_3_4(out_results);
+  }
+
+ private:
+  sp<V3_4::ICameraDeviceCallback> upstream_;
+  std::shared_ptr<MasterAiBridge> bridge_;
+};
+
 class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
  public:
   BlancCameraDeviceSession(sp<V3_2::ICameraDeviceSession> real_3_2,
                            sp<V3_3::ICameraDeviceSession> real_3_3,
                            sp<V3_4::ICameraDeviceSession> real_3_4,
+                           std::shared_ptr<MasterAiBridge> bridge,
                            int camera_id,
                            float active_array_width,
                            const VendorTagIds& tag_ids)
       : real_3_2_(std::move(real_3_2)),
         real_3_3_(std::move(real_3_3)),
         real_3_4_(std::move(real_3_4)),
+        bridge_(std::move(bridge)),
         camera_id_(camera_id),
         active_array_width_(active_array_width),
         tag_ids_(tag_ids) {
-    session_ = ClassifySession(camera_id_, {}, active_array_width_);
+    {
+      std::lock_guard<std::mutex> state_lock(bridge_->state_mutex_);
+      bridge_->session_ = ClassifySession(camera_id_, {}, active_array_width_);
+    }
     outer_req_fmq_ = std::make_unique<RequestMetadataQueue>(
         kDefaultRequestFmqBytes, /*configureEventFlagWord=*/false);
     if (!outer_req_fmq_->isValid()) {
@@ -408,6 +698,14 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
           auto q = std::make_unique<RequestMetadataQueue>(desc);
           if (q->isValid()) {
             inner_req_fmq_ = std::move(q);
+          }
+        });
+    real_3_2_->getCaptureResultMetadataQueue(
+        [this](const MQDescriptorSync<uint8_t>& desc) {
+          auto q = std::make_unique<ResultMetadataQueue>(desc);
+          if (q->isValid()) {
+            std::lock_guard<std::mutex> fmq_lock(bridge_->fmq_mutex_);
+            bridge_->inner_res_fmq_ = std::move(q);
           }
         });
   }
@@ -422,14 +720,15 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
       const V3_2::StreamConfiguration& requestedConfiguration,
       configureStreams_cb _hidl_cb) override {
     {
-      std::lock_guard<std::mutex> lock(lock_);
+      std::lock_guard<std::mutex> state_lock(bridge_->state_mutex_);
+      bridge_->last_preview_req_bytes_.clear();
       std::vector<StreamDesc> descs;
       descs.reserve(requestedConfiguration.streams.size());
       for (const auto& s : requestedConfiguration.streams) {
         descs.push_back({static_cast<int32_t>(s.format),
                          static_cast<uint64_t>(s.usage), s.width, s.height});
       }
-      session_ = ClassifySession(
+      bridge_->session_ = ClassifySession(
           camera_id_, descs, active_array_width_,
           static_cast<uint32_t>(requestedConfiguration.operationMode));
     }
@@ -444,14 +743,15 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
       return Void();
     }
     {
-      std::lock_guard<std::mutex> lock(lock_);
+      std::lock_guard<std::mutex> state_lock(bridge_->state_mutex_);
+      bridge_->last_preview_req_bytes_.clear();
       std::vector<StreamDesc> descs;
       descs.reserve(requestedConfiguration.streams.size());
       for (const auto& s : requestedConfiguration.streams) {
         descs.push_back({static_cast<int32_t>(s.format),
                          static_cast<uint64_t>(s.usage), s.width, s.height});
       }
-      session_ = ClassifySession(
+      bridge_->session_ = ClassifySession(
           camera_id_, descs, active_array_width_,
           static_cast<uint32_t>(requestedConfiguration.operationMode));
     }
@@ -468,7 +768,8 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
     std::vector<uint8_t> rewritten_params;
     bool use_rewritten = false;
     {
-      std::lock_guard<std::mutex> lock(lock_);
+      std::lock_guard<std::mutex> state_lock(bridge_->state_mutex_);
+      bridge_->last_preview_req_bytes_.clear();
       std::vector<StreamDesc> descs;
       descs.reserve(requestedConfiguration.streams.size());
       for (const auto& s : requestedConfiguration.streams) {
@@ -476,13 +777,14 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
                          static_cast<uint64_t>(s.v3_2.usage), s.v3_2.width,
                          s.v3_2.height});
       }
-      session_ = ClassifySession(
+      bridge_->session_ = ClassifySession(
           camera_id_, descs, active_array_width_,
           static_cast<uint32_t>(requestedConfiguration.operationMode));
-      if (!session_.has_raw16 && !session_.is_video &&
-          (session_.camera_id == 0 || session_.camera_id == 1)) {
+      if (!bridge_->session_.has_raw16 && !bridge_->session_.is_video &&
+          (bridge_->session_.camera_id == 0 ||
+           bridge_->session_.camera_id == 1)) {
         use_rewritten = RewriteMetadataBytes(
-            &session_, MetadataOrigin::kSessionParameters,
+            &bridge_->session_, MetadataOrigin::kSessionParameters,
             requestedConfiguration.sessionParams.data(),
             requestedConfiguration.sessionParams.size(), tag_ids_,
             &rewritten_params);
@@ -508,7 +810,7 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
     hidl_vec<V3_2::CaptureRequest> out_reqs(requests.size());
 
     {
-      std::lock_guard<std::mutex> lock(lock_);
+      std::lock_guard<std::mutex> state_lock(bridge_->state_mutex_);
       for (size_t i = 0; i < requests.size(); ++i) {
         if (!PrepareV3_2RequestLocked(requests[i], &out_reqs[i],
                                       &backing_buffers)) {
@@ -534,7 +836,7 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
     hidl_vec<V3_4::CaptureRequest> out_reqs(requests.size());
 
     {
-      std::lock_guard<std::mutex> lock(lock_);
+      std::lock_guard<std::mutex> state_lock(bridge_->state_mutex_);
       for (size_t i = 0; i < requests.size(); ++i) {
         const V3_4::CaptureRequest& src = requests[i];
         V3_4::CaptureRequest& dst = out_reqs[i];
@@ -595,12 +897,26 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
 
   Return<void> getCaptureResultMetadataQueue(
       getCaptureResultMetadataQueue_cb _hidl_cb) override {
+    {
+      std::lock_guard<std::mutex> fmq_lock(bridge_->fmq_mutex_);
+      if (bridge_->outer_res_fmq_ != nullptr &&
+          bridge_->outer_res_fmq_->isValid()) {
+        _hidl_cb(*bridge_->outer_res_fmq_->getDesc());
+        return Void();
+      }
+    }
     return real_3_2_->getCaptureResultMetadataQueue(_hidl_cb);
   }
 
   Return<Status> flush() override { return real_3_2_->flush(); }
 
-  Return<void> close() override { return real_3_2_->close(); }
+  Return<void> close() override {
+    {
+      std::lock_guard<std::mutex> state_lock(bridge_->state_mutex_);
+      bridge_->last_preview_req_bytes_.clear();
+    }
+    return real_3_2_->close();
+  }
 
  private:
   void AttachSettingsToInnerFmqOrInline(const uint8_t* ptr,
@@ -654,11 +970,33 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
       slice_len = src.settings.size();
     }
 
-    if (slice_len > 0 && !session_.has_raw16 && !session_.is_video &&
-        (session_.camera_id == 0 || session_.camera_id == 1)) {
+    bool is_from_cache = false;
+    if (slice_len == 0 && !bridge_->session_.has_raw16 &&
+        !bridge_->session_.is_video && bridge_->session_.camera_id == 0 &&
+        bridge_->session_.master_ai_enabled &&
+        bridge_->session_.master_ai_state_dirty &&
+        !bridge_->last_preview_req_bytes_.empty()) {
+      slice_ptr = bridge_->last_preview_req_bytes_.data();
+      slice_len = bridge_->last_preview_req_bytes_.size();
+      is_from_cache = true;
+    }
+
+    if (slice_len > 0 && !bridge_->session_.has_raw16 &&
+        !bridge_->session_.is_video &&
+        (bridge_->session_.camera_id == 0 ||
+         bridge_->session_.camera_id == 1)) {
+      const uint8_t* orig_ptr = slice_ptr;
+      const size_t orig_len = slice_len;
+      bool safe_preview_template = false;
       std::vector<uint8_t> rewritten;
-      if (RewriteMetadataBytes(&session_, MetadataOrigin::kCaptureRequest,
-                               slice_ptr, slice_len, tag_ids_, &rewritten)) {
+      const bool did_rewrite = RewriteMetadataBytes(
+          &bridge_->session_, MetadataOrigin::kCaptureRequest, slice_ptr,
+          slice_len, tag_ids_, &rewritten, &safe_preview_template);
+      if (!is_from_cache && safe_preview_template &&
+          bridge_->session_.camera_id == 0) {
+        bridge_->last_preview_req_bytes_.assign(orig_ptr, orig_ptr + orig_len);
+      }
+      if (did_rewrite) {
         backing_buffers->push_back(std::move(rewritten));
         slice_ptr = backing_buffers->back().data();
         slice_len = backing_buffers->back().size();
@@ -673,13 +1011,12 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
   sp<V3_2::ICameraDeviceSession> real_3_2_;
   sp<V3_3::ICameraDeviceSession> real_3_3_;
   sp<V3_4::ICameraDeviceSession> real_3_4_;
+  std::shared_ptr<MasterAiBridge> bridge_;
   int camera_id_;
   float active_array_width_;
   VendorTagIds tag_ids_;
   std::unique_ptr<RequestMetadataQueue> outer_req_fmq_;
   std::unique_ptr<RequestMetadataQueue> inner_req_fmq_;
-  std::mutex lock_;
-  SessionPolicy session_;
 };
 
 class BlancCameraDevice final : public V3_2::ICameraDevice {
@@ -714,10 +1051,25 @@ class BlancCameraDevice final : public V3_2::ICameraDevice {
   Return<void> open(const sp<V3_2::ICameraDeviceCallback>& callback,
                     open_cb _hidl_cb) override {
     EnsureActiveArrayWidthCached();
+    auto bridge = std::make_shared<MasterAiBridge>(tag_ids_);
+    sp<V3_2::ICameraDeviceCallback> wrapped_cb;
+    if (callback != nullptr) {
+      auto cast_cb_3_4 = V3_4::ICameraDeviceCallback::castFrom(callback);
+      sp<V3_4::ICameraDeviceCallback> cb_3_4 =
+          cast_cb_3_4.isOk()
+              ? static_cast<sp<V3_4::ICameraDeviceCallback>>(cast_cb_3_4)
+              : nullptr;
+      if (cb_3_4 != nullptr) {
+        wrapped_cb = new BlancCameraDeviceCallbackV3_4(cb_3_4, bridge);
+      } else {
+        wrapped_cb = new BlancCameraDeviceCallbackV3_2(callback, bridge);
+      }
+    }
     return real_device_->open(
-        callback,
-        [this, &_hidl_cb](Status status,
-                          const sp<V3_2::ICameraDeviceSession>& real_sess) {
+        wrapped_cb,
+        [this, &_hidl_cb, bridge](
+            Status status,
+            const sp<V3_2::ICameraDeviceSession>& real_sess) {
           if (status != Status::OK || real_sess == nullptr) {
             _hidl_cb(status, real_sess);
             return;
@@ -738,7 +1090,8 @@ class BlancCameraDevice final : public V3_2::ICameraDevice {
             active_w = active_array_width_;
           }
           sp<V3_2::ICameraDeviceSession> wrapped = new BlancCameraDeviceSession(
-              real_sess, sess_3_3, sess_3_4, camera_id_, active_w, tag_ids_);
+              real_sess, sess_3_3, sess_3_4, bridge, camera_id_, active_w,
+              tag_ids_);
           _hidl_cb(status, wrapped);
         });
   }

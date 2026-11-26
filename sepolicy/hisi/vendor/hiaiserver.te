@@ -1,0 +1,37 @@
+# Huawei Kirin 970 HiAI NPU daemon (.225 parity)
+type hiaiserver, domain;
+type hiaiserver_exec, exec_type, vendor_file_type, file_type;
+
+init_daemon_domain(hiaiserver)
+hal_server_domain(hiaiserver, hal_neuralnetworks)
+hal_client_domain(hiaiserver, hal_allocator)
+hal_client_domain(hiaiserver, vendor_hal_hisi_perf)
+wakelock_use(hiaiserver)
+
+allow hiaiserver {
+    vendor_ipu_device
+    gpu_device
+    ion_device
+}:chr_file rw_file_perms;
+allow hiaiserver {
+    vendor_dmd_device
+    vendor_hwlog_device
+}:chr_file { getattr open write };
+
+allow hiaiserver vendor_data_file:dir search;
+allow hiaiserver {
+    vendor_hiai_data_file
+    vendor_ai_platform_config_file
+    vendor_logcat_data_file
+}:dir create_dir_perms;
+allow hiaiserver {
+    vendor_hiai_data_file
+    vendor_ai_platform_config_file
+    vendor_logcat_data_file
+}:file create_file_perms;
+
+allow hiaiserver { hal_camera_default hal_graphics_allocator_default }:fd use;
+
+get_prop(hiaiserver, vendor_hiai_prop)
+set_prop(hiaiserver, vendor_xcollie_prop)
+dontaudit hiaiserver { default_prop config_prop }:file r_file_perms;
