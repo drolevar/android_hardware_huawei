@@ -745,6 +745,11 @@ class Phase6BSepolicyTests(unittest.TestCase):
         self.assertIsNone(
             re.search(r"^\s*allow\s+hal_camera_default\b.*\bsysfs_thermal\b.*\bw_file_perms\b", clients_te, re.M)
         )
+        genfs_txt = (VENDOR / "genfs_contexts").read_text()
+        self.assertIn(
+            "genfscon sysfs /devices/platform/e82c0000.mali/devfreq/gpufreq u:object_r:sysfs_devfreq_dir:s0",
+            genfs_txt,
+        )
 
 
 if __name__ == "__main__":
