@@ -169,6 +169,7 @@ public final class HuaweiExtensionsHostTest {
         expectedWireTypes.put("com.huawei.capture.metadata.portraitMode", Byte.class);
         expectedWireTypes.put("com.huawei.capture.metadata.frontVirtualEffectMode", Byte.class);
         expectedWireTypes.put("com.huawei.capture.metadata.frontVirtualEffectLevel", Byte.class);
+        expectedWireTypes.put("com.huawei.capture.metadata.masterAIEnable", Byte.class);
 
         Set<String> seenTags = new HashSet<>();
         CameraCharacteristics chars = new CameraCharacteristics();
@@ -226,6 +227,14 @@ public final class HuaweiExtensionsHostTest {
                     if (ext instanceof BokehImageCaptureExtenderImpl) {
                         assertBokehContract(camId, stage.getParameters());
                     }
+                    final boolean expectMasterAi =
+                            "0".equals(camId) && (ext instanceof AutoImageCaptureExtenderImpl);
+                    assertTrue(
+                            hasByteTag(stage.getParameters(),
+                                    "com.huawei.capture.metadata.masterAIEnable", (byte) 1)
+                                    == expectMasterAi,
+                            camId + " " + ext.getClass().getSimpleName()
+                                    + " masterAIEnable expectation mismatch");
                 }
                 if ("1".equals(camId)) {
                     for (Pair<CaptureRequest.Key, Object> p :
@@ -250,6 +259,8 @@ public final class HuaweiExtensionsHostTest {
                 "Expected normalFrontNightMode to be exercised");
         assertTrue(seenTags.contains("com.huawei.capture.metadata.frontVirtualEffectMode"),
                 "Expected frontVirtualEffectMode to be exercised");
+        assertTrue(seenTags.contains("com.huawei.capture.metadata.masterAIEnable"),
+                "Expected masterAIEnable to be exercised");
     }
 
     private static boolean hasByteTag(
