@@ -158,6 +158,12 @@ void PopulateVendorTagsFromSections(const hidl_vec<VendorTagSection>& sections,
             resolved.optical_zoom_mode = tag.tagId;
           } else if (tag_name == "hw-zoom-in") {
             resolved.hw_zoom_in = tag.tagId;
+          } else if (tag_name == "imagePostProcessMode") {
+            resolved.image_post_process_mode = tag.tagId;
+          } else if (tag_name == "extSceneMode") {
+            resolved.ext_scene_mode = tag.tagId;
+          } else if (tag_name == "postProcessForegroundReturnMode") {
+            resolved.post_process_fg_return_mode = tag.tagId;
           }
         }
       }
@@ -254,7 +260,8 @@ bool RewriteMetadataBytes(SessionPolicy* session,
   if (session == nullptr || out_rewritten == nullptr) {
     return false;
   }
-  if (session->has_raw16 || session->is_video || session->camera_id != 0) {
+  if (session->has_raw16 || session->is_video ||
+      (session->camera_id != 0 && session->camera_id != 1)) {
     return false;
   }
 
@@ -318,6 +325,9 @@ bool RewriteMetadataBytes(SessionPolicy* session,
   ReadEntryIntoTagMap(meta, tag_ids.dual_sensor_mode, &tags);
   ReadEntryIntoTagMap(meta, tag_ids.optical_zoom_mode, &tags);
   ReadEntryIntoTagMap(meta, tag_ids.hw_zoom_in, &tags);
+  ReadEntryIntoTagMap(meta, tag_ids.image_post_process_mode, &tags);
+  ReadEntryIntoTagMap(meta, tag_ids.ext_scene_mode, &tags);
+  ReadEntryIntoTagMap(meta, tag_ids.post_process_fg_return_mode, &tags);
 
   const bool mutated = RewriteMetadata(
       session, origin, /*is_empty_delta_buffer=*/false, request_template,
@@ -470,7 +480,7 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
           camera_id_, descs, active_array_width_,
           static_cast<uint32_t>(requestedConfiguration.operationMode));
       if (!session_.has_raw16 && !session_.is_video &&
-          session_.camera_id == 0) {
+          (session_.camera_id == 0 || session_.camera_id == 1)) {
         use_rewritten = RewriteMetadataBytes(
             &session_, MetadataOrigin::kSessionParameters,
             requestedConfiguration.sessionParams.data(),
@@ -645,7 +655,7 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
     }
 
     if (slice_len > 0 && !session_.has_raw16 && !session_.is_video &&
-        session_.camera_id == 0) {
+        (session_.camera_id == 0 || session_.camera_id == 1)) {
       std::vector<uint8_t> rewritten;
       if (RewriteMetadataBytes(&session_, MetadataOrigin::kCaptureRequest,
                                slice_ptr, slice_len, tag_ids_, &rewritten)) {

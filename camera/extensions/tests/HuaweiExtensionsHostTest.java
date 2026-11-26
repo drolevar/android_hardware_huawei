@@ -157,6 +157,9 @@ public final class HuaweiExtensionsHostTest {
         expectedWireTypes.put("com.huawei.capture.metadata.cameraSessionSceneMode", Integer.class);
         expectedWireTypes.put("com.huawei.capture.metadata.apertureValue", Integer.class);
         expectedWireTypes.put("com.huawei.capture.metadata.faceBeautyLevel", Integer.class);
+        expectedWireTypes.put("com.huawei.capture.metadata.imagePostProcessMode", Byte.class);
+        expectedWireTypes.put("com.huawei.capture.metadata.postProcessForegroundReturnMode", Byte.class);
+        expectedWireTypes.put("com.huawei.capture.metadata.extSceneMode", Byte.class);
         expectedWireTypes.put("com.huawei.capture.metadata.dualSensorMode", Byte.class);
         expectedWireTypes.put("com.huawei.capture.metadata.sensorHdrMode", Byte.class);
         expectedWireTypes.put("com.huawei.capture.metadata.apertureMode", Byte.class);
@@ -214,6 +217,15 @@ public final class HuaweiExtensionsHostTest {
                                         + p.second.getClass() + ", want " + want);
                         seenTags.add(keyName);
                     }
+                    assertTrue(sawImagePostProcessMode(stage.getParameters()),
+                            camId + " " + ext.getClass().getSimpleName()
+                                    + " must enable imagePostProcessMode=1");
+                    assertTrue(sawPostProcessFgReturnMode(stage.getParameters()),
+                            camId + " " + ext.getClass().getSimpleName()
+                                    + " must enable postProcessForegroundReturnMode=1");
+                    if (ext instanceof BokehImageCaptureExtenderImpl) {
+                        assertBokehContract(camId, stage.getParameters());
+                    }
                 }
                 if ("1".equals(camId)) {
                     for (Pair<CaptureRequest.Key, Object> p :
@@ -226,12 +238,72 @@ public final class HuaweiExtensionsHostTest {
                 ext.onDeInit();
             }
         }
+        assertTrue(seenTags.contains("com.huawei.capture.metadata.imagePostProcessMode"),
+                "Expected imagePostProcessMode to be exercised");
+        assertTrue(seenTags.contains("com.huawei.capture.metadata.postProcessForegroundReturnMode"),
+                "Expected postProcessForegroundReturnMode to be exercised");
+        assertTrue(seenTags.contains("com.huawei.capture.metadata.extSceneMode"),
+                "Expected extSceneMode to be exercised");
         assertTrue(seenTags.contains("com.huawei.capture.metadata.dualSensorMode"),
                 "Expected dualSensorMode to be exercised");
         assertTrue(seenTags.contains("com.huawei.capture.metadata.normalFrontNightMode"),
                 "Expected normalFrontNightMode to be exercised");
         assertTrue(seenTags.contains("com.huawei.capture.metadata.frontVirtualEffectMode"),
                 "Expected frontVirtualEffectMode to be exercised");
+    }
+
+    private static boolean hasByteTag(
+            List<Pair<CaptureRequest.Key, Object>> params, String name, byte val) {
+        for (Pair<CaptureRequest.Key, Object> p : params) {
+            if (name.equals(p.first.getName())
+                    && p.second instanceof Byte
+                    && ((Byte) p.second).byteValue() == val) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasIntTag(
+            List<Pair<CaptureRequest.Key, Object>> params, String name, int val) {
+        for (Pair<CaptureRequest.Key, Object> p : params) {
+            if (name.equals(p.first.getName())
+                    && p.second instanceof Integer
+                    && ((Integer) p.second).intValue() == val) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean sawImagePostProcessMode(
+            List<Pair<CaptureRequest.Key, Object>> params) {
+        return hasByteTag(params, "com.huawei.capture.metadata.imagePostProcessMode", (byte) 1);
+    }
+
+    private static boolean sawPostProcessFgReturnMode(
+            List<Pair<CaptureRequest.Key, Object>> params) {
+        return hasByteTag(
+                params, "com.huawei.capture.metadata.postProcessForegroundReturnMode", (byte) 1);
+    }
+
+    private static void assertBokehContract(
+            String camId, List<Pair<CaptureRequest.Key, Object>> params) {
+        if ("0".equals(camId)) {
+            assertTrue(hasIntTag(params, "com.huawei.capture.metadata.cameraSceneMode", 19),
+                    "Rear Bokeh must set cameraSceneMode=19");
+            assertTrue(hasByteTag(params, "com.huawei.capture.metadata.apertureMode", (byte) 1),
+                    "Rear Bokeh must set apertureMode=1");
+            for (Pair<CaptureRequest.Key, Object> p : params) {
+                assertTrue(!"com.huawei.capture.metadata.portraitMode".equals(p.first.getName()),
+                        "Rear Bokeh (scene=19) must not set portraitMode");
+            }
+        } else {
+            assertTrue(hasIntTag(params, "com.huawei.capture.metadata.cameraSceneMode", 23),
+                    "Front Bokeh must set cameraSceneMode=23");
+            assertTrue(hasByteTag(params, "com.huawei.capture.metadata.portraitMode", (byte) 1),
+                    "Front Bokeh must set portraitMode=1");
+        }
     }
 
     private static void testOrthogonalControlKeysPresent() {

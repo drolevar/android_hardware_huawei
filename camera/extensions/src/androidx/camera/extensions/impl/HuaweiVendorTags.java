@@ -44,6 +44,15 @@ final class HuaweiVendorTags {
                     Integer.class);
 
     // TYPE_BYTE (0) -> Byte.class
+    static final CaptureRequest.Key<Byte> KEY_IMAGE_POST_PROCESS_MODE =
+            new CaptureRequest.Key<>("com.huawei.capture.metadata.imagePostProcessMode",
+                    Byte.class);
+    static final CaptureRequest.Key<Byte> KEY_POST_PROCESS_FG_RETURN_MODE =
+            new CaptureRequest.Key<>("com.huawei.capture.metadata.postProcessForegroundReturnMode",
+                    Byte.class);
+    static final CaptureRequest.Key<Byte> KEY_EXT_SCENE_MODE =
+            new CaptureRequest.Key<>("com.huawei.capture.metadata.extSceneMode",
+                    Byte.class);
     static final CaptureRequest.Key<Byte> KEY_DUAL_SENSOR_MODE =
             new CaptureRequest.Key<>("com.huawei.capture.metadata.dualSensorMode",
                     Byte.class);
@@ -87,11 +96,14 @@ final class HuaweiVendorTags {
             String cameraId, Mode mode) {
         final boolean rear = "0".equals(cameraId);
         List<Pair<CaptureRequest.Key, Object>> params = new ArrayList<>();
+        params.add(param(KEY_IMAGE_POST_PROCESS_MODE, Byte.valueOf((byte) 1)));
+        params.add(param(KEY_POST_PROCESS_FG_RETURN_MODE, Byte.valueOf((byte) 1)));
 
         switch (mode) {
             case AUTO:
                 params.add(param(KEY_CAMERA_SESSION_SCENE_MODE, Integer.valueOf(0)));
                 params.add(param(KEY_CAMERA_SCENE_MODE, Integer.valueOf(0)));
+                params.add(param(KEY_EXT_SCENE_MODE, Byte.valueOf((byte) 33)));
                 if (rear) {
                     params.add(param(KEY_DUAL_SENSOR_MODE, Byte.valueOf((byte) 3)));
                 }
@@ -103,18 +115,21 @@ final class HuaweiVendorTags {
                 if (rear) {
                     params.add(param(KEY_DUAL_SENSOR_MODE, Byte.valueOf((byte) 3)));
                 }
+                params.add(param(KEY_EXT_SCENE_MODE, Byte.valueOf((byte) 34)));
                 params.add(param(KEY_SENSOR_HDR_MODE, Byte.valueOf((byte) 1)));
                 break;
 
             case BOKEH:
-                params.add(param(KEY_CAMERA_SESSION_SCENE_MODE, Integer.valueOf(23)));
-                params.add(param(KEY_CAMERA_SCENE_MODE, Integer.valueOf(23)));
-                params.add(param(KEY_PORTRAIT_MODE, Byte.valueOf((byte) 1)));
                 if (rear) {
+                    params.add(param(KEY_CAMERA_SESSION_SCENE_MODE, Integer.valueOf(19)));
+                    params.add(param(KEY_CAMERA_SCENE_MODE, Integer.valueOf(19)));
                     params.add(param(KEY_DUAL_SENSOR_MODE, Byte.valueOf((byte) 3)));
                     params.add(param(KEY_APERTURE_MODE, Byte.valueOf((byte) 1)));
                     params.add(param(KEY_APERTURE_VALUE, Integer.valueOf(4)));
                 } else {
+                    params.add(param(KEY_CAMERA_SESSION_SCENE_MODE, Integer.valueOf(23)));
+                    params.add(param(KEY_CAMERA_SCENE_MODE, Integer.valueOf(23)));
+                    params.add(param(KEY_PORTRAIT_MODE, Byte.valueOf((byte) 1)));
                     params.add(param(KEY_FRONT_VIRTUAL_EFFECT_MODE, Byte.valueOf((byte) 1)));
                     params.add(param(KEY_FRONT_VIRTUAL_EFFECT_LEVEL, Byte.valueOf((byte) 5)));
                     params.add(param(KEY_FACE_BEAUTY_MODE, Byte.valueOf((byte) 1)));
@@ -125,6 +140,7 @@ final class HuaweiVendorTags {
             case NIGHT:
                 params.add(param(KEY_CAMERA_SESSION_SCENE_MODE, Integer.valueOf(7)));
                 params.add(param(KEY_CAMERA_SCENE_MODE, Integer.valueOf(7)));
+                params.add(param(KEY_EXT_SCENE_MODE, Byte.valueOf((byte) 33)));
                 if (rear) {
                     params.add(param(KEY_DUAL_SENSOR_MODE, Byte.valueOf((byte) 3)));
                 } else {
@@ -135,6 +151,7 @@ final class HuaweiVendorTags {
             case FACE_RETOUCH:
                 params.add(param(KEY_CAMERA_SESSION_SCENE_MODE, Integer.valueOf(16)));
                 params.add(param(KEY_CAMERA_SCENE_MODE, Integer.valueOf(16)));
+                params.add(param(KEY_EXT_SCENE_MODE, Byte.valueOf((byte) 33)));
                 if (rear) {
                     params.add(param(KEY_DUAL_SENSOR_MODE, Byte.valueOf((byte) 3)));
                 }

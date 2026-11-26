@@ -61,10 +61,12 @@ constexpr int32_t kRequestTemplateVideoSnapshot = 4;
 
 // Verified EMUI 12 .225 Huawei vendor tag IDs (com.huawei.capture.metadata.*).
 constexpr uint32_t kTagFaceBeautyMode = 0x8000001fU;
+constexpr uint32_t kTagImagePostProcessMode = 0x8000002eU;
 constexpr uint32_t kTagFaceBeautyLevel = 0x8000002fU;
 constexpr uint32_t kTagDualSensorMode = 0x8000004bU;
 constexpr uint32_t kTagHwZoomIn = 0x80000070U;
 constexpr uint32_t kTagNormalFrontNightMode = 0x8000007aU;
+constexpr uint32_t kTagExtSceneMode = 0x8000007bU;
 constexpr uint32_t kTagSensorHdrMode = 0x80000090U;
 constexpr uint32_t kTagApertureMode = 0x800000c4U;
 constexpr uint32_t kTagApertureValue = 0x800000c6U;
@@ -74,6 +76,7 @@ constexpr uint32_t kTagFrontVirtualEffectMode = 0x80000265U;
 constexpr uint32_t kTagFrontVirtualEffectLevel = 0x80000266U;
 constexpr uint32_t kTagCameraSceneMode = 0x800002a2U;
 constexpr uint32_t kTagCameraSessionSceneMode = 0x800002a3U;
+constexpr uint32_t kTagPostProcessForegroundReturnMode = 0x800002e8U;
 
 struct VendorTagIds {
   uint32_t camera_scene_mode = kTagCameraSceneMode;
@@ -81,6 +84,9 @@ struct VendorTagIds {
   uint32_t dual_sensor_mode = kTagDualSensorMode;
   uint32_t optical_zoom_mode = kTagOpticalZoomMode;
   uint32_t hw_zoom_in = kTagHwZoomIn;
+  uint32_t image_post_process_mode = kTagImagePostProcessMode;
+  uint32_t ext_scene_mode = kTagExtSceneMode;
+  uint32_t post_process_fg_return_mode = kTagPostProcessForegroundReturnMode;
 };
 
 struct StreamDesc {
@@ -92,10 +98,16 @@ struct StreamDesc {
 
 struct SessionPolicy {
   int camera_id = 0;
+  bool has_blob = false;
   bool has_raw16 = false;
+  bool has_high_res_yuv = false;
   bool is_video = false;
   float active_array_width = 3968.0f;
   float last_zoom_ratio = 1.0f;
+
+  bool can_postproc() const {
+    return has_blob && !has_raw16 && !has_high_res_yuv && !is_video;
+  }
 };
 
 enum class MetadataOrigin : uint8_t {
