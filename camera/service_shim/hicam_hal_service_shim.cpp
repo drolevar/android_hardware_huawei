@@ -608,13 +608,18 @@ class BlancCameraDeviceCallbackV3_2 final : public V3_2::ICameraDeviceCallback {
   Return<bool> linkToDeath(
       const sp<::android::hardware::hidl_death_recipient>& recipient,
       uint64_t cookie) override {
-    return (upstream_ != nullptr) ? upstream_->linkToDeath(recipient, cookie)
-                                  : false;
+    if (upstream_ == nullptr) {
+      return false;
+    }
+    return upstream_->linkToDeath(recipient, cookie);
   }
 
   Return<bool> unlinkToDeath(
       const sp<::android::hardware::hidl_death_recipient>& recipient) override {
-    return (upstream_ != nullptr) ? upstream_->unlinkToDeath(recipient) : false;
+    if (upstream_ == nullptr) {
+      return false;
+    }
+    return upstream_->unlinkToDeath(recipient);
   }
 
  private:
@@ -677,13 +682,18 @@ class BlancCameraDeviceCallbackV3_4 final : public V3_4::ICameraDeviceCallback {
   Return<bool> linkToDeath(
       const sp<::android::hardware::hidl_death_recipient>& recipient,
       uint64_t cookie) override {
-    return (upstream_ != nullptr) ? upstream_->linkToDeath(recipient, cookie)
-                                  : false;
+    if (upstream_ == nullptr) {
+      return false;
+    }
+    return upstream_->linkToDeath(recipient, cookie);
   }
 
   Return<bool> unlinkToDeath(
       const sp<::android::hardware::hidl_death_recipient>& recipient) override {
-    return (upstream_ != nullptr) ? upstream_->unlinkToDeath(recipient) : false;
+    if (upstream_ == nullptr) {
+      return false;
+    }
+    return upstream_->unlinkToDeath(recipient);
   }
 
  private:
