@@ -786,6 +786,7 @@ class Phase6BSepolicyTests(unittest.TestCase):
         prop_ctx = (VENDOR / "property_contexts").read_text()
         self.assertRegex(prop_ctx, r"(?m)^persist\.vendor\.ai\.\s+u:object_r:vendor_hiai_prop:s0$")
         self.assertRegex(prop_ctx, r"(?m)^vendor\.ArmNN\.\s+u:object_r:vendor_hiai_prop:s0$")
+        self.assertRegex(prop_ctx, r"(?m)^vendor\.Armnn\.\s+u:object_r:vendor_hiai_prop:s0$")
 
         hiai_te = re.sub(r"#.*", "", (VENDOR / "hiaiserver.te").read_text())
         for needle in (

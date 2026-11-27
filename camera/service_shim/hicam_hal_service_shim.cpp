@@ -605,6 +605,18 @@ class BlancCameraDeviceCallbackV3_2 final : public V3_2::ICameraDeviceCallback {
     return upstream_->notify(msgs);
   }
 
+  Return<bool> linkToDeath(
+      const sp<::android::hardware::hidl_death_recipient>& recipient,
+      uint64_t cookie) override {
+    return (upstream_ != nullptr) ? upstream_->linkToDeath(recipient, cookie)
+                                  : false;
+  }
+
+  Return<bool> unlinkToDeath(
+      const sp<::android::hardware::hidl_death_recipient>& recipient) override {
+    return (upstream_ != nullptr) ? upstream_->unlinkToDeath(recipient) : false;
+  }
+
  private:
   sp<V3_2::ICameraDeviceCallback> upstream_;
   std::shared_ptr<MasterAiBridge> bridge_;
@@ -660,6 +672,18 @@ class BlancCameraDeviceCallbackV3_4 final : public V3_4::ICameraDeviceCallback {
       }
     }
     return upstream_->processCaptureResult_3_4(out_results);
+  }
+
+  Return<bool> linkToDeath(
+      const sp<::android::hardware::hidl_death_recipient>& recipient,
+      uint64_t cookie) override {
+    return (upstream_ != nullptr) ? upstream_->linkToDeath(recipient, cookie)
+                                  : false;
+  }
+
+  Return<bool> unlinkToDeath(
+      const sp<::android::hardware::hidl_death_recipient>& recipient) override {
+    return (upstream_ != nullptr) ? upstream_->unlinkToDeath(recipient) : false;
   }
 
  private:
@@ -976,8 +1000,9 @@ class BlancCameraDeviceSession final : public V3_4::ICameraDeviceSession {
         bridge_->session_.master_ai_enabled &&
         bridge_->session_.master_ai_state_dirty &&
         !bridge_->last_preview_req_bytes_.empty()) {
-      slice_ptr = bridge_->last_preview_req_bytes_.data();
-      slice_len = bridge_->last_preview_req_bytes_.size();
+      backing_buffers->push_back(bridge_->last_preview_req_bytes_);
+      slice_ptr = backing_buffers->back().data();
+      slice_len = backing_buffers->back().size();
       is_from_cache = true;
     }
 
