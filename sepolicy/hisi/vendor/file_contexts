@@ -204,6 +204,7 @@
 /data/vendor/wifi(/.*)?                         u:object_r:vendor_wlan_data_file:s0
 /data/vendor/iked_config(/.*)?                  u:object_r:vendor_iked_data_file:s0
 /data/vendor/hinetmanager(/.*)?                 u:object_r:vendor_hinetmanager_data_file:s0
+/data/vendor/fingerprint_dump(/.*)?             u:object_r:vendor_fingerprint_data_file:s0
 /sys/devices/platform/0\.hisee(/.*)?            u:object_r:sysfs_hisee:s0
 /sys/class/graphics/fb[0-9](/.*)?               u:object_r:sysfs_framebuffer:s0
 /sys/devices/virtual/graphics/fb[0-9](/.*)?     u:object_r:sysfs_framebuffer:s0

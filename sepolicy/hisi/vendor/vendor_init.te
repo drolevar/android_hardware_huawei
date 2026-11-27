@@ -7,7 +7,9 @@ allow vendor_init proc_hung_task:file w_file_perms;
 allow vendor_init tmpfs:dir create_dir_perms;
 r_dir_file(vendor_init, sysfs_android_usb)
 allow vendor_init sysfs_android_usb:file { w_file_perms setattr };
-allow vendor_init { sysfs sysfs_leds sysfs_huawei_sensor sysfs_camerafs }:{ dir file lnk_file } { relabelfrom relabelto };
+r_dir_file(vendor_init, sysfs_fingerprint)
+allow vendor_init sysfs_fingerprint:file { w_file_perms setattr };
+allow vendor_init { sysfs sysfs_leds sysfs_huawei_sensor sysfs_camerafs sysfs_fingerprint }:{ dir file lnk_file } { relabelfrom relabelto };
 set_prop(vendor_init, {
     vendor_power_prop
     vendor_camera_prop

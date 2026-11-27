@@ -807,6 +807,47 @@ class Phase6BSepolicyTests(unittest.TestCase):
         self.assertIn("hal_client_domain(hal_camera_default, hal_neuralnetworks)", clients_te)
         self.assertIn("allow hal_camera_default hiaiserver:fd use;", clients_te)
 
+    def test_fingerprint_sysfs_and_hal_rules(self):
+        decls = load_type_declarations()
+        self.assertEqual(
+            decls["sysfs_fingerprint"],
+            {"fs_type", "sysfs_type", "mlstrustedobject"},
+        )
+        self.assertIn("data_file_type", decls["vendor_fingerprint_data_file"])
+        self.assertNotIn("vendor_file_type", decls["vendor_fingerprint_data_file"])
+        self.assertNotIn("core_data_file_type", decls["vendor_fingerprint_data_file"])
+
+        rules = load_file_contexts()
+        self.assertEqual(
+            resolve_type(rules, "/data/vendor/fingerprint_dump/test.bin"),
+            "vendor_fingerprint_data_file",
+        )
+
+        genfs_txt = (VENDOR / "genfs_contexts").read_text()
+        self.assertRegex(
+            genfs_txt,
+            r"(?m)^genfscon\s+sysfs\s+/devices/platform/fingerprint\s+u:object_r:sysfs_fingerprint:s0$",
+        )
+
+        vinit_te = re.sub(r"#.*", "", (VENDOR / "vendor_init.te").read_text())
+        self.assertIn("sysfs_fingerprint", vinit_te)
+        self.assertIn("setattr", vinit_te)
+
+        clients_te = re.sub(r"#.*", "", (VENDOR / "hal_hisi_clients.te").read_text())
+        for needle in (
+            "hal_client_domain(hal_fingerprint_default, hal_power)",
+            "hal_client_domain(hal_fingerprint_default, vendor_hal_hisi_libteec)",
+            "hal_client_domain(hal_fingerprint_default, vendor_hal_hisi_perf)",
+            "sysfs_fingerprint",
+            "vendor_logcat_data_file",
+            "vendor_fingerprint_data_file",
+            "sysfs_touchscreen",
+            "input_device:chr_file rw_file_perms",
+            "self:global_capability2_class_set syslog",
+        ):
+            self.assertIn(needle, clients_te)
+        self.assertNotIn("data_between_core_and_vendor_violators", clients_te)
+
 
 if __name__ == "__main__":
     unittest.main()

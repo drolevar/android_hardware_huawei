@@ -255,11 +255,40 @@ set_prop(hal_gnss_default, vendor_gps_prop)
 binder_call(hal_gnss_default, vendor_hisi_connectivity)
 binder_call(vendor_hisi_connectivity, hal_gnss_default)
 
-# Fingerprint HAL
+# Fingerprint HAL (FPC1075S / vendor.huawei.hardware.biometrics.fingerprint@2.2-service)
+hal_client_domain(hal_fingerprint_default, hal_power)
+hal_client_domain(hal_fingerprint_default, vendor_hal_hisi_libteec)
+hal_client_domain(hal_fingerprint_default, vendor_hal_hisi_perf)
 allow hal_fingerprint_default vendor_fingerprint_device:chr_file rw_file_perms;
 allow hal_fingerprint_default { vendor_dmd_device vendor_hwlog_device }:chr_file { getattr open write };
+allow hal_fingerprint_default input_device:dir r_dir_perms;
+allow hal_fingerprint_default input_device:chr_file rw_file_perms;
+r_dir_file(hal_fingerprint_default, {
+    sysfs_fingerprint
+    sysfs_leds
+    sysfs_power
+    sysfs_touchscreen
+    sysfs_vibrator
+})
+allow hal_fingerprint_default {
+    sysfs_fingerprint
+    sysfs_power
+    sysfs_touchscreen
+    sysfs_vibrator
+}:file rw_file_perms;
+allow hal_fingerprint_default sysfs_devices_system_cpu:file w_file_perms;
+allow hal_fingerprint_default vendor_data_file:dir search;
 allow hal_fingerprint_default splashtwo_file:dir create_dir_perms;
 allow hal_fingerprint_default splashtwo_file:file create_file_perms;
+allow hal_fingerprint_default {
+    vendor_fingerprint_data_file
+    vendor_logcat_data_file
+}:dir create_dir_perms;
+allow hal_fingerprint_default {
+    vendor_fingerprint_data_file
+    vendor_logcat_data_file
+}:file create_file_perms;
+allow hal_fingerprint_default self:global_capability2_class_set syslog;
 dontaudit hal_fingerprint_default default_prop:file r_file_perms;
 
 # Suppress installd filesystem quotaget probes on read-only vendor/HiSEE mounts

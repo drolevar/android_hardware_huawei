@@ -27,6 +27,7 @@ type vendor_iked_data_file, file_type, data_file_type;
 type vendor_hinetmanager_data_file, file_type, data_file_type;
 type vendor_hiai_data_file, file_type, data_file_type;
 type vendor_ai_platform_config_file, file_type, data_file_type;
+type vendor_fingerprint_data_file, file_type, data_file_type;
 type vendor_iked_cert_file, file_type, vendor_file_type;
 
 # Kirin sysfs & procfs nodes
@@ -37,6 +38,7 @@ type sysfs_touchscreen, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_audio_hw_config, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_huawei_sensor, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_camerafs, fs_type, sysfs_type, mlstrustedobject;
+type sysfs_fingerprint, fs_type, sysfs_type, mlstrustedobject;
 type proc_gps, fs_type, proc_type;
 type proc_gpu_memory, fs_type, proc_type;
 type proc_wakeup_sources, fs_type, proc_type;
